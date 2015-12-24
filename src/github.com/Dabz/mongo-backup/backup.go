@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Wed 23 Dec 18:48:37 2015 gaspar_d
+** Last update Thu 24 Dec 01:19:19 2015 gaspar_d
 */
 
 package main
@@ -13,6 +13,7 @@ package main
 import (
   "os"
   "log"
+  "gopkg.in/mgo.v2"
 )
 
 type env struct {
@@ -22,6 +23,8 @@ type env struct {
   info    *log.Logger
   warning *log.Logger
   error   *log.Logger
+  mongo   *mgo.Session
+  dbpath  string
 }
 
 func (e *env) setupEnvironment(o Options) {
@@ -38,6 +41,34 @@ func (e *env) setupEnvironment(o Options) {
   e.options = o;
   e.checkBackupDirectory();
   e.checkHomeFile();
+  e.connectMongo();
+  e.setupMongo();
+}
+
+func (e *env) setupMongo() {
+  if (e.options.stepdown) {
+    if (! e.mongoIsSecondary()) {
+      e.info.Printf("Currently connected to a primary node, performing a rs.stepDown()");
+      e.mongoStepDown();
+    }
+  }
+
+  if (e.options.fsynclock) {
+    e.info.Printf("Locking the database")
+    e.mongoFsyncLock();
+  }
+  if (e.options.fsynclock) {
+    e.info.Printf("Unlocking the database")
+    e.mongoFsyncUnLock();
+  }
+}
+
+func (e *env) cleanupEnv() {
+  e.info.Printf("Operation failed, cleaning up the database")
+  if (e.options.fsynclock) {
+    e.info.Printf("Performing fsyncUnlock");
+  }
+  e.mongoFsyncUnLock();
 }
 
 func (e *env) checkBackupDirectory() {
