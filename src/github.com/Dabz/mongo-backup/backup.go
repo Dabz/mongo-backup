@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Thu 24 Dec 01:19:19 2015 gaspar_d
+** Last update Thu 24 Dec 11:39:06 2015 gaspar_d
 */
 
 package main
@@ -47,19 +47,35 @@ func (e *env) setupEnvironment(o Options) {
 
 func (e *env) setupMongo() {
   if (e.options.stepdown) {
-    if (! e.mongoIsSecondary()) {
+    isSec, err := e.mongoIsSecondary();
+    if (err != nil) {
+      os.Exit(1);
+    }
+    if (! isSec) {
       e.info.Printf("Currently connected to a primary node, performing a rs.stepDown()");
-      e.mongoStepDown();
+      if (e.mongoStepDown() != nil) {
+        os.Exit(1);
+      }
     }
   }
 
   if (e.options.fsynclock) {
     e.info.Printf("Locking the database")
-    e.mongoFsyncLock();
+    if(e.mongoFsyncLock() != nil) {
+      e.cleanupEnv();
+      os.Exit(1);
+    }
   }
+  /* Begining Critical path */
+
+  /* End of Critical path */
+
   if (e.options.fsynclock) {
     e.info.Printf("Unlocking the database")
-    e.mongoFsyncUnLock();
+    if (e.mongoFsyncUnLock() != nil) {
+      e.cleanupEnv();
+      os.Exit(1);
+    }
   }
 }
 
