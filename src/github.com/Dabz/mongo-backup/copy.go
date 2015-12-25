@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Fri 25 Dec 03:48:32 2015 gaspar_d
+** Last update Fri 25 Dec 17:03:00 2015 gaspar_d
 */
 
 package main
@@ -98,6 +98,10 @@ func (e *env) recCopyDir(source string, dest string, backedByte int64, totalSize
   objects, err := directory.Readdir(-1)
 
   for _, obj := range objects {
+    if (obj.Name() == "mongod.lock") {
+      continue;
+    }
+
     sourcefilepointer := source + "/" + obj.Name()
     destinationfilepointer := dest + "/" + obj.Name()
 

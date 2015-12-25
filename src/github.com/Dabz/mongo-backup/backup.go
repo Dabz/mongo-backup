@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Fri 25 Dec 02:41:04 2015 gaspar_d
+** Last update Fri 25 Dec 18:38:57 2015 gaspar_d
 */
 
 package main
@@ -15,17 +15,19 @@ import (
   "time"
   "log"
   "gopkg.in/mgo.v2"
+  "gopkg.in/mgo.v2/bson"
 )
 
 type env struct {
-  options  Options
-  homefile *os.File
-  trace   *log.Logger
-  info    *log.Logger
-  warning *log.Logger
-  error   *log.Logger
-  mongo   *mgo.Session
-  dbpath  string
+  options   Options
+  homefile  *os.File
+  homeval   HomeLogFile
+  trace     *log.Logger
+  info      *log.Logger
+  warning   *log.Logger
+  error     *log.Logger
+  mongo     *mgo.Session
+  dbpath    string
 }
 
 func (e *env) setupEnvironment(o Options) {
@@ -106,7 +108,16 @@ func (e *env) performFullBackup() {
 }
 
 func (e *env) perforIncrementalBackup() {
+  var (
+    lastSavedOplog    bson.MongoTimestamp
+    firstOplogEntries bson.MongoTimestamp
+  )
 
+  lastSavedOplog    = e.homeval.lastOplog;
+  firstOplogEntries = e.getOplogFirstEntries()["ts"].(bson.MongoTimestamp);
+
+  _ = lastSavedOplog;
+  _ = firstOplogEntries;
 }
 
 func (e *env) cleanupEnv() {
@@ -134,11 +145,29 @@ func (e *env) checkBackupDirectory() {
 }
 
 func (e *env) checkHomeFile() {
-  file, err := os.OpenFile(e.options.directory + "/backup.json", os.O_CREATE | os.O_RDWR, 0777);
-  if err != nil {
-    e.error.Printf("can not open  %s (%s)", e.options.directory + "/backup.json", err);
-    os.Exit(1);
-  }
+  homefile := e.options.directory + "/backup.json";
+  _, err   := os.Stat(homefile);
 
-  e.homefile = file;
+  if (err != nil) {
+    e.homefile, err = os.OpenFile(homefile, os.O_CREATE | os.O_RDWR, 0777);
+    err             = e.homeval.Create(e.homefile);
+    if err != nil {
+      e.error.Printf("can not create  %s (%s)", e.options.directory + "/backup.json", err);
+      os.Exit(1);
+    }
+  } else {
+    e.homefile, err = os.OpenFile(homefile, os.O_RDWR, 0777);
+
+    if err != nil {
+      e.error.Printf("can not open  %s (%s)", e.options.directory + "/backup.json", err);
+      os.Exit(1);
+    }
+
+    err = e.homeval.Read(e.homefile);
+
+    if (err != nil) {
+      e.error.Printf("can not parse %s (%s)", homefile, err);
+      os.Exit(1);
+    }
+  }
 }

@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 23:59:53 2015 gaspar_d
-** Last update Fri 25 Dec 02:33:19 2015 gaspar_d
+** Last update Fri 25 Dec 16:56:32 2015 gaspar_d
 */
 
 
@@ -92,4 +92,18 @@ func (e *env) mongoStepDown() (error) {
   }
 
   return err;
+}
+
+func (e *env) getOplogLastEntries() (bson.M) {
+  result := bson.M{};
+  _       = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("-$natural").One(&result);
+
+  return result;
+}
+
+func (e *env) getOplogFirstEntries() (bson.M) {
+  result := bson.M{};
+  _       = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("$natural").One(&result);
+
+  return result;
 }
