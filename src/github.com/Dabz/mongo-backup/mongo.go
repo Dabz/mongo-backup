@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 23:59:53 2015 gaspar_d
-** Last update Thu 24 Dec 11:37:42 2015 gaspar_d
+** Last update Fri 25 Dec 02:33:19 2015 gaspar_d
 */
 
 
@@ -39,7 +39,7 @@ func (e *env) connectMongo() {
   e.mongo.SetMode(mgo.SecondaryPreferred, true);
 }
 
-func (e *env) fetchRequireInformation() {
+func (e *env) fetchDBPath() {
   result := bson.M{};
   err     := e.mongo.DB("admin").Run(bson.D{{"getCmdLineOpts", 1}}, &result);
   if (err != nil) {

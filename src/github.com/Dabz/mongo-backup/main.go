@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:25:07 2015 gaspar_d
-** Last update Wed 23 Dec 18:48:43 2015 gaspar_d
+** Last update Fri 25 Dec 02:06:24 2015 gaspar_d
 */
 
 package main
@@ -17,4 +17,5 @@ func main() {
   option := parseOptions();
   env    := env{};
   env.setupEnvironment(option);
+  env.performBackup();
 }

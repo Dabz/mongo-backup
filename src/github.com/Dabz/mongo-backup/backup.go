@@ -5,13 +5,14 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Thu 24 Dec 11:39:06 2015 gaspar_d
+** Last update Fri 25 Dec 02:41:04 2015 gaspar_d
 */
 
 package main
 
 import (
   "os"
+  "time"
   "log"
   "gopkg.in/mgo.v2"
 )
@@ -58,6 +59,20 @@ func (e *env) setupMongo() {
       }
     }
   }
+}
+
+func (e *env) performBackup() {
+  if (! e.options.incremental) {
+    e.performFullBackup();
+  } else {
+    e.perforIncrementalBackup();
+  }
+
+}
+
+func (e *env) performFullBackup() {
+  e.fetchDBPath();
+  e.info.Printf("Performing full backup of: %s", e.dbpath);
 
   if (e.options.fsynclock) {
     e.info.Printf("Locking the database")
@@ -66,24 +81,39 @@ func (e *env) setupMongo() {
       os.Exit(1);
     }
   }
-  /* Begining Critical path */
+  /* Begining critical path */
+  backupName      := time.Now().Format("20060102150405");
+  backupDirectory := e.options.directory + "/" + backupName;
 
-  /* End of Critical path */
+  err, size := e.CopyDir(e.dbpath, backupDirectory);
+  sizeGb    := float64(size) / (1024*1024*1024);
+  if (err != nil) {
+    e.error.Print("An error occurred while backing up ...");
+    e.cleanupEnv();
+    os.Exit(1);
+  }
 
+  e.info.Printf("Success, %fGB of data has been saved in %s", sizeGb, backupDirectory);
+
+  /* End of critical path */
   if (e.options.fsynclock) {
     e.info.Printf("Unlocking the database")
-    if (e.mongoFsyncUnLock() != nil) {
-      e.cleanupEnv();
-      os.Exit(1);
-    }
+      if (e.mongoFsyncUnLock() != nil) {
+        e.cleanupEnv();
+        os.Exit(1);
+      }
   }
+}
+
+func (e *env) perforIncrementalBackup() {
+
 }
 
 func (e *env) cleanupEnv() {
   e.info.Printf("Operation failed, cleaning up the database")
-  if (e.options.fsynclock) {
-    e.info.Printf("Performing fsyncUnlock");
-  }
+    if (e.options.fsynclock) {
+      e.info.Printf("Performing fsyncUnlock");
+    }
   e.mongoFsyncUnLock();
 }
 
