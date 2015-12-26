@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Fri 25 Dec 16:43:22 2015 gaspar_d
+** Last update Sat 26 Dec 09:17:30 2015 gaspar_d
 */
 
 package main
@@ -46,6 +46,8 @@ func parseOptions() (Options) {
   optMongo       := getopt.StringLong("host" , 'h' , "localhost:27017" , "mongo hostname");
   optMongoUser   := getopt.StringLong("user" , 'u' , ""                , "mongo username");
   optMongoPwd    := getopt.StringLong("pwd"  , 'p' , ""                , "mongo password");
+
+  optRestoreTime := getopt.StringLong("restoretime" , 'o' , "", "point in time restore");
 
   getopt.SetParameters("backup/restore")
 
