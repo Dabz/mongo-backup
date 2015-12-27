@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:55:40 2015 gaspar_d
-** Last update Fri 25 Dec 02:32:15 2015 gaspar_d
+** Last update Sun 27 Dec 21:45:31 2015 gaspar_d
 */
 
 package main
@@ -67,7 +67,7 @@ var (
   mutex = &sync.Mutex{}
 )
 
-func (e *env) PBShow(percent float32) error {
+func (e *env) PBShow(percent float32, title string) error {
   var (
     ws   *WinSize
     err  error
@@ -89,7 +89,7 @@ func (e *env) PBShow(percent float32) error {
     return err
   }
 
-  num = fmt.Sprintf("%.2f%%", percent*100)
+  num = fmt.Sprintf("%s (%.2f%%)", title, percent*100)
   pgl = int(ws.Ws_col) - remain - 2 - 7
   half = int(percent*1000)%10 != 0
   percent = percent * 100 / 100
@@ -116,4 +116,8 @@ func (e *env) PBShow(percent float32) error {
   }
 
   return nil
+}
+
+func (e *env) PBEnd() {
+  fmt.Print()
 }

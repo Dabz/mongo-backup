@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Sat 26 Dec 23:25:23 2015 gaspar_d
+** Last update Sun 27 Dec 21:40:42 2015 gaspar_d
 */
 
 package main
@@ -36,7 +36,7 @@ func (e *env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
   opcount = float32(e.getOplogCount())
   counter = 0
 
-  e.PBShow(0)
+  e.PBShow(0, "oplog dump")
 
   if e.options.compress {
     dest         += ".lz4"
@@ -68,10 +68,10 @@ func (e *env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
     copy(buff, raw.Data)
     destfile.Write(buff)
     counter += 1
-    e.PBShow(counter / opcount)
+    e.PBShow(counter / opcount, "oplog dump")
   }
 
-  e.PBShow(1)
+  e.PBShow(1, "oplog dump")
 
   return nil, float32(e.GetDirSize(dir))
 }

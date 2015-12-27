@@ -5,16 +5,16 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Fri 25 Dec 17:03:00 2015 gaspar_d
+** Last update Sun 27 Dec 21:46:26 2015 gaspar_d
 */
 
 package main
 
- import (
-   "os"
-   "io"
-   "github.com/pierrec/lz4"
- )
+import (
+  "os"
+  "io"
+  "github.com/pierrec/lz4"
+)
 
 
 
@@ -77,8 +77,8 @@ func (e *env) GetDirSize(source string) (int64) {
 
 
 func (e *env) CopyDir(source string, dest string) (err error, backedByte int64) {
-  totalSize := e.GetDirSize(source);
-  return e.recCopyDir(source, dest, 0, totalSize);
+  totalSize := e.GetDirSize(source)
+  return e.recCopyDir(source, dest, 0, totalSize)
 }
 
 
@@ -116,7 +116,7 @@ func (e *env) recCopyDir(source string, dest string, backedByte int64, totalSize
         e.error.Println(err);
       }
       backedByte = backedByte + size;
-      e.PBShow(float32(backedByte) / float32(totalSize))
+      e.PBShow(float32(backedByte) / float32(totalSize), "backup")
     }
   }
 
