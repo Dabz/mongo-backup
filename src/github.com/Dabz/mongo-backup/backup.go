@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Fri 25 Dec 18:38:57 2015 gaspar_d
+** Last update Sat 26 Dec 23:34:32 2015 gaspar_d
 */
 
 package main
@@ -19,15 +19,16 @@ import (
 )
 
 type env struct {
-  options   Options
-  homefile  *os.File
-  homeval   HomeLogFile
-  trace     *log.Logger
-  info      *log.Logger
-  warning   *log.Logger
-  error     *log.Logger
-  mongo     *mgo.Session
-  dbpath    string
+  options            Options
+  homefile           *os.File
+  homeval            HomeLogFile
+  trace              *log.Logger
+  info               *log.Logger
+  warning            *log.Logger
+  error              *log.Logger
+  mongo              *mgo.Session
+  dbpath             string
+  backupdirectory    string
 }
 
 func (e *env) setupEnvironment(o Options) {
@@ -64,12 +65,14 @@ func (e *env) setupMongo() {
 }
 
 func (e *env) performBackup() {
+  backupName       := time.Now().Format("20060102150405");
+  e.backupdirectory = e.options.directory + "/" + backupName;
+
   if (! e.options.incremental) {
     e.performFullBackup();
   } else {
     e.perforIncrementalBackup();
   }
-
 }
 
 func (e *env) performFullBackup() {
@@ -84,10 +87,7 @@ func (e *env) performFullBackup() {
     }
   }
   /* Begining critical path */
-  backupName      := time.Now().Format("20060102150405");
-  backupDirectory := e.options.directory + "/" + backupName;
-
-  err, size := e.CopyDir(e.dbpath, backupDirectory);
+  err, size := e.CopyDir(e.dbpath, e.backupdirectory);
   sizeGb    := float64(size) / (1024*1024*1024);
   if (err != nil) {
     e.error.Print("An error occurred while backing up ...");
@@ -95,7 +95,17 @@ func (e *env) performFullBackup() {
     os.Exit(1);
   }
 
-  e.info.Printf("Success, %fGB of data has been saved in %s", sizeGb, backupDirectory);
+   newEntry       := BackupEntry{};
+   newEntry.Ts     = time.Now();
+   newEntry.Source = e.dbpath;
+   newEntry.Dest   = e.backupdirectory;
+   newEntry.Kind   = e.options.kind;
+   newEntry.Type   = "full";
+   newEntry.LastOplog = e.getOplogLastEntries()["ts"].(bson.MongoTimestamp);
+   e.homeval.AddNewEntry(newEntry);
+
+
+  e.info.Printf("Success, %fGB of data has been saved in %s", sizeGb, e.backupdirectory);
 
   /* End of critical path */
   if (e.options.fsynclock) {
@@ -111,13 +121,42 @@ func (e *env) perforIncrementalBackup() {
   var (
     lastSavedOplog    bson.MongoTimestamp
     firstOplogEntries bson.MongoTimestamp
+    lastOplogEntry    bson.MongoTimestamp
   )
+
+  e.info.Printf("Performing an incremental backup of: %s", e.options.mongohost);
 
   lastSavedOplog    = e.homeval.lastOplog;
   firstOplogEntries = e.getOplogFirstEntries()["ts"].(bson.MongoTimestamp);
+  lastOplogEntry    = e.getOplogLastEntries()["ts"].(bson.MongoTimestamp);
 
-  _ = lastSavedOplog;
-  _ = firstOplogEntries;
+  if (firstOplogEntries > lastSavedOplog) {
+    e.error.Printf("Can not find a common point");
+    e.error.Printf("You must perform a full backup");
+    e.error.Printf("If this error happens frequently, consider increasing the Oplog size");
+
+    os.Exit(1);
+  }
+
+  cursor    := e.getOplogEntries(lastSavedOplog)
+  err, size := e.dumpOplogToDir(cursor, e.backupdirectory)
+
+  if (err != nil) {
+    e.error.Printf("Error while dumping oplog to %s (%s)", e.backupdirectory, err)
+    e.cleanupEnv()
+    os.Exit(1)
+  }
+
+   newEntry       := BackupEntry{};
+   newEntry.Ts     = time.Now();
+   newEntry.Source = e.options.mongohost
+   newEntry.Dest   = e.backupdirectory;
+   newEntry.Kind   = e.options.kind;
+   newEntry.Type   = "inc";
+   newEntry.LastOplog = lastOplogEntry;
+   e.homeval.AddNewEntry(newEntry);
+
+  e.info.Printf("Success, %fMB of data has been saved in %s", size / (1024*1024), e.backupdirectory);
 }
 
 func (e *env) cleanupEnv() {
@@ -126,6 +165,7 @@ func (e *env) cleanupEnv() {
       e.info.Printf("Performing fsyncUnlock");
     }
   e.mongoFsyncUnLock();
+  e.homefile.Close();
 }
 
 func (e *env) checkBackupDirectory() {
@@ -149,17 +189,17 @@ func (e *env) checkHomeFile() {
   _, err   := os.Stat(homefile);
 
   if (err != nil) {
-    e.homefile, err = os.OpenFile(homefile, os.O_CREATE | os.O_RDWR, 0777);
+    e.homefile, err = os.OpenFile(homefile, os.O_CREATE | os.O_RDWR, 0700);
     err             = e.homeval.Create(e.homefile);
     if err != nil {
-      e.error.Printf("can not create  %s (%s)", e.options.directory + "/backup.json", err);
+      e.error.Printf("can not create  %s (%s)", homefile, err);
       os.Exit(1);
     }
   } else {
-    e.homefile, err = os.OpenFile(homefile, os.O_RDWR, 0777);
+    e.homefile, err = os.OpenFile(homefile, os.O_RDWR, 0700);
 
     if err != nil {
-      e.error.Printf("can not open  %s (%s)", e.options.directory + "/backup.json", err);
+      e.error.Printf("can not open  %s (%s)", homefile, err);
       os.Exit(1);
     }
 

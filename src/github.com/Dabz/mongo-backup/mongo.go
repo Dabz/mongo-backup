@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 23:59:53 2015 gaspar_d
-** Last update Fri 25 Dec 16:56:32 2015 gaspar_d
+** Last update Sat 26 Dec 23:27:31 2015 gaspar_d
 */
 
 
@@ -106,4 +106,15 @@ func (e *env) getOplogFirstEntries() (bson.M) {
   _       = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("$natural").One(&result);
 
   return result;
+}
+
+func (e *env) getOplogEntries(ts bson.MongoTimestamp) (iter *mgo.Iter) {
+  query := bson.M{"ts": bson.M{"$gt": ts}};
+  iter   = e.mongo.DB("local").C("oplog.rs").Find(query).Iter()
+  return iter;
+}
+
+func (e *env) getOplogCount() (int) {
+  count, _ := e.mongo.DB("local").C("oplog.rs").Count();
+  return count;
 }

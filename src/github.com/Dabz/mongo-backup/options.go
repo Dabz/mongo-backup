@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Sat 26 Dec 09:17:30 2015 gaspar_d
+** Last update Sat 26 Dec 23:37:26 2015 gaspar_d
 */
 
 package main
@@ -27,6 +27,7 @@ type Options struct {
   incremental bool
   compress    bool
   directory   string
+  kind        string
   mongohost   string
   mongouser   string
   mongopwd    string
@@ -37,17 +38,16 @@ func parseOptions() (Options) {
   var lineOption Options;
 
   optDirectory   := getopt.StringLong("dir"         , 'o' , "mongo-backup", "base directory to save & restore backup")
-  optNoStepdown  := getopt.BoolLong("nostepdown"    , 0   , "do not perform rs.stepDown()")
-  optNoFsyncLock := getopt.BoolLong("nofsynclock"   , 0   , "do not use fsyncLock() and fsyncUnlock()")
-  optNoCompress  := getopt.BoolLong("nocompression" , 0   , "do not use compression for backup&restore")
+  optKind        := getopt.StringLong("kind"        , 'k' , "snapshot", "metadata associated to the backup")
+  optNoStepdown  := getopt.BoolLong("nostepdown"    , 0   , "no rs.stepDown() if this is the primary node")
+  optNoFsyncLock := getopt.BoolLong("nofsynclock"   , 0   , "Avoid using fsyncLock() and fsyncUnlock()")
+  optNoCompress  := getopt.BoolLong("nocompress"    , 0   , "disable compression for backup & restore")
   optFull        := getopt.BoolLong("full"          , 0   , "perform a non incremental backup")
-  optHelp        := getopt.BoolLong("help"          , 0   , "Help")
+  optHelp        := getopt.BoolLong("help"          , 0   , "")
 
   optMongo       := getopt.StringLong("host" , 'h' , "localhost:27017" , "mongo hostname");
   optMongoUser   := getopt.StringLong("user" , 'u' , ""                , "mongo username");
   optMongoPwd    := getopt.StringLong("pwd"  , 'p' , ""                , "mongo password");
-
-  optRestoreTime := getopt.StringLong("restoretime" , 'o' , "", "point in time restore");
 
   getopt.SetParameters("backup/restore")
 
@@ -76,6 +76,7 @@ func parseOptions() (Options) {
   lineOption.mongohost = *optMongo;
   lineOption.mongouser = *optMongoUser;
   lineOption.mongopwd  = *optMongoPwd;
+  lineOption.kind      = *optKind;
 
 
   if (!validateOptions(lineOption)) {
