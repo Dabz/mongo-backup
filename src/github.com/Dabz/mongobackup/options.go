@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Mon 28 Dec 11:12:28 2015 gaspar_d
+** Last update Mon 28 Dec 11:41:41 2015 gaspar_d
 */
 
-package mongobackup
+package main
 
 import (
    "os"
@@ -36,7 +36,7 @@ type Options struct {
 
 
 // parse the command line and create the Options struct
-func parseOptions() (Options) {
+func ParseOptions() (Options) {
   var lineOption Options;
 
   optDirectory   := getopt.StringLong("dir"         , 'o' , "mongo-backup", "base directory to save & restore backup")

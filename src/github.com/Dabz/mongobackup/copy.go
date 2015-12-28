@@ -8,7 +8,7 @@
 ** Last update Mon 28 Dec 11:16:15 2015 gaspar_d
 */
 
-package mongobackup
+package main
 
 import (
   "os"
@@ -20,7 +20,7 @@ import (
 
 // Copy a file to another destination
 // if the compress flag is present, compress the file while copying using lz4
-func (e *env) CopyFile(source string, dest string) (err error, backedByte int64) {
+func (e *Env) CopyFile(source string, dest string) (err error, backedByte int64) {
   sourcefile, err := os.Open(source);
   if err != nil {
     return err, 0;
@@ -60,7 +60,7 @@ func (e *env) CopyFile(source string, dest string) (err error, backedByte int64)
 }
 
 // Return the total size of the directory in byte
-func (e *env) GetDirSize(source string) (int64) {
+func (e *Env) GetDirSize(source string) (int64) {
   directory, _   := os.Open(source);
   var sum int64   = 0;
   defer directory.Close();
@@ -81,7 +81,7 @@ func (e *env) GetDirSize(source string) (int64) {
 
 
 // Copy a directory into another and compress all files if required
-func (e *env) CopyDir(source string, dest string) (err error, backedByte int64) {
+func (e *Env) CopyDir(source string, dest string) (err error, backedByte int64) {
   totalSize      := e.GetDirSize(source)
   pb             := Progessbar{}
   pb.title        = "backup"
@@ -99,7 +99,7 @@ func (e *env) CopyDir(source string, dest string) (err error, backedByte int64) 
 
 
 // Recursive copy directory function
-func (e *env) recCopyDir(source string, dest string, backedByte int64, totalSize int64, pb *Progessbar) (err error, oBackedByte int64) {
+func (e *Env) recCopyDir(source string, dest string, backedByte int64, totalSize int64, pb *Progessbar) (err error, oBackedByte int64) {
   sourceinfo, err := os.Stat(source);
 
   if err != nil {

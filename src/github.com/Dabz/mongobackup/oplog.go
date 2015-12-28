@@ -8,7 +8,7 @@
 ** Last update Mon 28 Dec 11:10:56 2015 gaspar_d
 */
 
-package mongobackup
+package main
 
 import (
   "os"
@@ -21,7 +21,7 @@ import (
 
 // dump the cursor to a directory
 // if compress option is specified, use lz4 while dumping
-func (e *env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
+func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
   var (
     destfile io.Writer
     opcount  float32

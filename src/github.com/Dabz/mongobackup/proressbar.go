@@ -8,7 +8,7 @@
 ** Last update Mon 28 Dec 01:05:31 2015 gaspar_d
 */
 
-package mongobackup
+package main
 
 import (
   "fmt"

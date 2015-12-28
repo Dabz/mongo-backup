@@ -8,7 +8,7 @@
 ** Last update Mon 28 Dec 00:55:14 2015 gaspar_d
 */
 
-package mongobackup
+package main
 
 import (
   "encoding/json"
