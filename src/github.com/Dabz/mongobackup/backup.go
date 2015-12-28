@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Mon 28 Dec 11:40:10 2015 gaspar_d
+** Last update Mon 28 Dec 23:34:55 2015 gaspar_d
 */
 
 package main
@@ -20,6 +20,7 @@ import (
 func (e *Env) PerformBackup() {
   backupName       := time.Now().Format("20060102150405");
   e.backupdirectory = e.options.directory + "/" + backupName;
+	e.ensureSecondary();
 
   if (! e.options.incremental) {
     e.performFullBackup();
@@ -74,7 +75,6 @@ func (e *Env) performFullBackup() {
 
 // perform an incremental backup
 // oplog greater than the last known oplog will be dump
-// to the directory.
 // if a common point in the oplog can not be found, a
 // full backup has to be performed
 func (e *Env) perforIncrementalBackup() {

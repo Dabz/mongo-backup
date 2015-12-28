@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 11:31:58 2015 gaspar_d
-** Last update Mon 28 Dec 11:40:44 2015 gaspar_d
+** Last update Mon 28 Dec 22:54:44 2015 gaspar_d
  */
 
 package main
@@ -32,25 +32,26 @@ type Env struct {
 
 // initialize the environment object
 func (e *Env) SetupEnvironment(o Options) {
-	traceHandle := os.Stdout
-	infoHandle := os.Stdout
+	traceHandle   := os.Stdout
+	infoHandle    := os.Stdout
 	warningHandle := os.Stdout
-	errorHandle := os.Stderr
+	errorHandle   := os.Stderr
 
-	e.trace = log.New(traceHandle, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
-	e.info = log.New(infoHandle, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	e.trace   = log.New(traceHandle, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
+	e.info    = log.New(infoHandle, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 	e.warning = log.New(warningHandle, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile)
-	e.error = log.New(errorHandle, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	e.error   = log.New(errorHandle, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	e.options = o
 	e.checkBackupDirectory()
 	e.checkHomeFile()
 	e.connectMongo()
-	e.setupMongo()
 }
 
-// connect to mongo
-func (e *Env) setupMongo() {
+
+// ensure that the targeted instance is a secondary
+// try to perform a rs.stepDown() if it is a primary node
+func (e *Env) ensureSecondary() {
 	if e.options.stepdown {
 		isSec, err := e.mongoIsSecondary()
 		if err != nil {
