@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:55:40 2015 gaspar_d
-** Last update Mon 28 Dec 01:05:31 2015 gaspar_d
+** Last update Tue 29 Dec 22:21:52 2015 gaspar_d
 */
 
 package main
@@ -123,7 +123,7 @@ func (p *Progessbar) Show(percent float32) error {
 
   p.Clear()
 
-  if int(percent) == 1 {
+  if int(percent) == 1 && !p.ended {
     fmt.Print(fmt.Sprintf("%s |%s| %s\n", p.title, ps, num))
     p.ended = true
   } else {
@@ -134,7 +134,7 @@ func (p *Progessbar) Show(percent float32) error {
 }
 
 func (p *Progessbar) End() {
-  if (! p.ended) {
+  if (!p.ended) {
     fmt.Print("\n")
     p.ended = true
   }

@@ -5,40 +5,42 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Mon 28 Dec 11:10:56 2015 gaspar_d
+** Last update Tue 29 Dec 20:59:25 2015 gaspar_d
 */
 
 package main
 
 import (
   "os"
+  "io"
   "gopkg.in/mgo.v2"
   "gopkg.in/mgo.v2/bson"
-  "io"
    "github.com/pierrec/lz4"
 )
 
 
 // dump the cursor to a directory
 // if compress option is specified, use lz4 while dumping
-func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
+func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson.MongoTimestamp) {
   var (
     destfile io.Writer
     opcount  float32
     counter  float32
     dest     string
     pb       Progessbar
+		lastop   bson.MongoTimestamp
   )
 
   err := os.MkdirAll(dir, 0777);
   if err != nil {
-    return err, 0
+    return err, 0, lastop
   }
 
   dest     = dir + "/oplog.bson"
   opcount  = float32(e.getOplogCount())
   counter  = 0
   pb.title = "oplog dump"
+	lastop   = e.homeval.lastOplog
 
   pb.Show(0)
 
@@ -46,7 +48,7 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
     dest         += ".lz4"
     dfile, err   := os.Create(dest)
     if err != nil {
-      return err, 0
+      return err, 0, lastop
     }
     defer dfile.Close();
     destfile = lz4.NewWriter(dfile);
@@ -54,17 +56,23 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
     dfile, err := os.Create(dest);
     destfile   = dfile;
     if err != nil {
-      return err, 0;
+      return err, 0, lastop;
     }
     defer dfile.Close();
   }
 
 
+	lastRow := bson.Raw{}
   for {
-    raw  := &bson.Raw{}
-    next := cursor.Next(raw)
+		raw   := &bson.Raw{}
+    next  := cursor.Next(raw)
 
     if !next {
+			if lastRow.Data != nil {
+			  lastRowUnmarshal := bson.M{}
+			  bson.Unmarshal(lastRow.Data, &lastRowUnmarshal)
+			  lastop = lastRowUnmarshal["ts"].(bson.MongoTimestamp)
+		  }
       break;
     }
 
@@ -72,11 +80,12 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32) {
     copy(buff, raw.Data)
     destfile.Write(buff)
     counter += 1
+		lastRow  = *raw
     pb.Show(counter / opcount)
   }
 
   pb.Show(1)
   pb.End()
 
-  return nil, float32(e.GetDirSize(dir))
+  return nil, float32(e.GetDirSize(dir)), lastop
 }

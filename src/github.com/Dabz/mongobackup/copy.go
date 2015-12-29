@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Mon 28 Dec 11:16:15 2015 gaspar_d
+** Last update Tue 29 Dec 21:44:51 2015 gaspar_d
 */
 
 package main
@@ -21,40 +21,40 @@ import (
 // Copy a file to another destination
 // if the compress flag is present, compress the file while copying using lz4
 func (e *Env) CopyFile(source string, dest string) (err error, backedByte int64) {
-  sourcefile, err := os.Open(source);
+  sourcefile, err := os.Open(source)
   if err != nil {
-    return err, 0;
+    return err, 0
   }
 
-  defer sourcefile.Close();
+  defer sourcefile.Close()
 
-  var destfile io.Writer;
+  var destfile io.Writer
   if (e.options.compress) {
-    dest         += ".lz4";
-    dfile, err   := os.Create(dest);
+    dest         += ".lz4"
+    dfile, err   := os.Create(dest)
     if err != nil {
-      return err, 0;
+      return err, 0
     }
-    defer dfile.Close();
-    destfile = lz4.NewWriter(dfile);
+    defer dfile.Close()
+    destfile = lz4.NewWriter(dfile)
   } else {
-    dfile, err := os.Create(dest);
-    destfile   = dfile;
+    dfile, err := os.Create(dest)
+    destfile   = dfile
     if err != nil {
-      return err, 0;
+      return err, 0
     }
-    defer dfile.Close();
+    defer dfile.Close()
   }
 
   _, err = io.Copy(destfile, sourcefile)
-  if err == nil {
-    sourceinfo, err := os.Stat(source);
-      if err != nil {
-        err = os.Chmod(dest, sourceinfo.Mode());
-      }
-  }
+	if err != nil {
+		return err, 0
+	}
 
-  sourceinfo, _ := os.Stat(source);
+	sourceinfo, err := os.Stat(source);
+	if err != nil {
+		return err, 0
+	}
 
   return nil, sourceinfo.Size();
 }
@@ -86,7 +86,7 @@ func (e *Env) CopyDir(source string, dest string) (err error, backedByte int64) 
   pb             := Progessbar{}
   pb.title        = "backup"
   pb.scale        = 3
-  err, _          =  e.recCopyDir(source, dest, 0, totalSize, &pb)
+  err, _          = e.recCopyDir(source, dest, 0, totalSize, &pb)
 
   pb.End();
 
@@ -119,18 +119,20 @@ func (e *Env) recCopyDir(source string, dest string, backedByte int64, totalSize
       continue;
     }
 
-    sourcefilepointer := source + "/" + obj.Name()
+    sourcefilepointer      := source + "/" + obj.Name()
     destinationfilepointer := dest + "/" + obj.Name()
 
     if obj.IsDir() {
       err, backedByte  = e.recCopyDir(sourcefilepointer, destinationfilepointer, backedByte, totalSize, pb)
       if err != nil {
         e.error.Println(err)
+				return err, 0
       }
     } else {
       err, size := e.CopyFile(sourcefilepointer, destinationfilepointer);
       if err != nil {
         e.error.Println(err);
+				return err, 0
       }
       backedByte = backedByte + size;
       pb.Show(float32(backedByte) / float32(totalSize))
