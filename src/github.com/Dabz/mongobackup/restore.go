@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 23:33:35 2015 gaspar_d
-** Last update Tue 29 Dec 23:32:00 2015 gaspar_d
+** Last update Wed 30 Dec 15:05:51 2015 gaspar_d
 */
 
 package main
@@ -17,7 +17,7 @@ import (
   "github.com/pierrec/lz4"
 )
 
-// perform a partial a global restore
+// check & perform a partial a global restore
 func (e *Env) PerformRestore() {
 	if e.options.pit != "" {
 		e.perforIncrementalRestore()
@@ -34,6 +34,7 @@ func (e *Env) PerformRestore() {
 	}
 }
 
+// perform the restore & dump the oplog if required
 func (e *Env) performFullRestore(entry *BackupEntry) {
 	var (
 		entryFull *BackupEntry
@@ -66,7 +67,8 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 	}
 
 	if entry.Type == "inc" {
-		err := e.dumpOplogsToDir(entry, entryFull)
+		e.info.Printf("Dumping oplog of the requested snapshots")
+		err := e.dumpOplogsToDir(entryFull, entry)
 		if err != nil {
 			e.error.Printf("Restore of %s failed while dumping oplog (%s)", entryFull.Dest,  err)
 			os.Exit(1)
@@ -76,7 +78,8 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 	e.info.Printf("Sucessful restoration, %fGB has been restored to %s", float32(restored) / (1024*1024*1024), e.options.output)
 }
 
-func (e *Env) dumpOplogsToDir(entry, entryFull *BackupEntry) error {
+// dump the oplog between the entries to the requested output directory
+func (e *Env) dumpOplogsToDir(from, to *BackupEntry) error {
 	destdir   := e.options.output + "/oplog"
 	oplogfile := destdir + "/oplog.bson"
 	err       := os.MkdirAll(destdir, 0700)
@@ -90,8 +93,9 @@ func (e *Env) dumpOplogsToDir(entry, entryFull *BackupEntry) error {
 	}
 	destfile.Truncate(0)
 
-	entries := e.homeval.GetEntriesBetween(entryFull, entry)
+	entries := e.homeval.GetEntriesBetween(from, to)
 	for _, entry := range entries {
+		e.info.Printf("Dumping oplog of backup %s", entry.Id)
 		var reader io.Reader
 		if entry.Compress {
 		  sourcename      := "oplog.bson.lz4"

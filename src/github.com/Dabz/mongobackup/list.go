@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 22:26:20 2015 gaspar_d
-** Last update Tue 29 Dec 21:06:01 2015 gaspar_d
+** Last update Wed 30 Dec 14:50:57 2015 gaspar_d
  */
 
 package main
@@ -26,7 +26,7 @@ func (e *Env) List(kind string) {
 
 	for _, entry := range entries {
 		if kind == DEFAULT_KIND || entry.Kind == kind {
-			fmt.Printf("ts: %s\tid: %s\tlocation: %s\tkind: %s\ttype: %s\n", entry.Ts, entry.Id, entry.Dest, entry.Kind, entry.Type)
+			fmt.Printf("id: %s\tts: %v\tkind: %s\ttype: %s\n", entry.Id, entry.Ts, entry.Kind, entry.Type)
 		}
 	}
 }

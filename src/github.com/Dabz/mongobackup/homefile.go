@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Tue 29 Dec 23:33:04 2015 gaspar_d
+** Last update Wed 30 Dec 15:06:01 2015 gaspar_d
  */
 
 package main
@@ -117,14 +117,18 @@ func (b *HomeLogFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
 	return nil
 }
 
-func (b *HomeLogFile) GetEntriesBetween(from, to *BackupEntry) []*BackupEntry {
-	results := []*BackupEntry{}
+func (b *HomeLogFile) GetEntriesBetween(from, to *BackupEntry) []BackupEntry {
+	results := []BackupEntry{}
 	for _, entry :=  range b.content.Entries {
 		if entry.Ts.After(from.Ts) && entry.Ts.Before(to.Ts) && entry.Kind == from.Kind {
 			if (entry.Type == "inc") {
-				results = append(results, &entry)
+				results = append(results, entry)
 			}
 		}
+	}
+
+	if to.Kind == from.Kind && to.Type == "inc" {
+		results = append(results, *to)
 	}
 
 	return results
