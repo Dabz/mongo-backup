@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Tue 29 Dec 20:59:25 2015 gaspar_d
+** Last update Fri  1 Jan 02:14:17 2016 gaspar_d
 */
 
 package main
@@ -16,6 +16,11 @@ import (
   "gopkg.in/mgo.v2"
   "gopkg.in/mgo.v2/bson"
    "github.com/pierrec/lz4"
+)
+
+const (
+	OPLOG_DIR  = "oplog/"
+	OPLOG_FILE = "oplog.bson"
 )
 
 
@@ -36,7 +41,7 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
     return err, 0, lastop
   }
 
-  dest     = dir + "/oplog.bson"
+  dest     = dir + "/" + OPLOG_FILE
   opcount  = float32(e.getOplogCount())
   counter  = 0
   pb.title = "oplog dump"
@@ -89,3 +94,53 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
 
   return nil, float32(e.GetDirSize(dir)), lastop
 }
+
+
+// dump the oplog between the entries to the requested output directory
+func (e *Env) DumpOplogsToDir(from, to *BackupEntry) error {
+	destdir   := e.options.output + "/" + OPLOG_DIR
+	oplogfile := destdir + OPLOG_FILE
+	err       := os.MkdirAll(destdir, 0700)
+	pb        := Progessbar{}
+  pb.scale   = 3
+	if err != nil {
+		return err
+	}
+
+	destfile, err := os.OpenFile(oplogfile, os.O_CREATE|os.O_RDWR, 0700)
+	if err != nil {
+		return err
+	}
+
+	entries := e.homeval.GetIncEntriesBetween(from, to)
+	total   := len(entries)
+	for index, entry := range entries {
+		var reader io.Reader
+		if entry.Compress {
+		  sourcename      :=  OPLOG_FILE + ".lz4"
+			sourcefile, err := os.Open(entry.Dest + "/" + sourcename)
+			if err != nil {
+				pb.End()
+			  return err
+			}
+			reader = lz4.NewReader(sourcefile)
+		} else {
+			sourcefile, err   := os.Open(entry.Dest + "/" + OPLOG_FILE)
+			reader             = sourcefile
+			if err != nil {
+				pb.End()
+			  return err
+			}
+		}
+
+		pb.title   = "dumping " + entry.Id
+		pb.Show(float32(index) / float32(total))
+
+		io.Copy(destfile, reader)
+	}
+	pb.title = "dumping"
+	pb.Show(1)
+	pb.End()
+	return nil
+}
+

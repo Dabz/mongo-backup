@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Wed 30 Dec 15:06:01 2015 gaspar_d
+** Last update Fri  1 Jan 02:55:27 2016 gaspar_d
  */
 
 package main
@@ -69,6 +69,7 @@ func (b *HomeLogFile) Read(reader *os.File) error {
 	return nil
 }
 
+// create a new homelogfile and write it to the disk
 func (b *HomeLogFile) Create(writer *os.File) error {
 	b.content.Version = HomeFileVersion
 	b.content.Entries = []BackupEntry{}
@@ -78,12 +79,14 @@ func (b *HomeLogFile) Create(writer *os.File) error {
 	return err
 }
 
+// add a new entry and flush it to the disk
 func (b *HomeLogFile) AddNewEntry(in BackupEntry) error {
 	b.content.Entries = append(b.content.Entries, in)
 	b.Flush()
 	return nil
 }
 
+// flush the homelogfile to disk
 func (b *HomeLogFile) Flush() error {
 	buff, err := json.MarshalIndent(b.content, "", "  ")
 
@@ -97,6 +100,7 @@ func (b *HomeLogFile) Flush() error {
 	return err
 }
 
+// return a backup associated to this speicifc id
 func (b *HomeLogFile) GetBackupEntry(id string) *BackupEntry {
 	for _, entry :=  range b.content.Entries {
 		if entry.Id == id {
@@ -107,6 +111,7 @@ func (b *HomeLogFile) GetBackupEntry(id string) *BackupEntry {
 	return nil
 }
 
+// return the last full backup realized before a specific entry
 func (b *HomeLogFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
 	for _, entry :=  range b.content.Entries {
 		if entry.Ts.Before(etr.Ts) && entry.Type == "full" && entry.Kind == etr.Kind {
@@ -117,7 +122,27 @@ func (b *HomeLogFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
 	return nil
 }
 
-func (b *HomeLogFile) GetEntriesBetween(from, to *BackupEntry) []BackupEntry {
+// get the last entry before the requested date
+// used to determine which snapshots to recover for pit
+func (b *HomeLogFile) GetLastEntryAfter(ts time.Time) *BackupEntry {
+	lastentry := BackupEntry{}
+	for _, entry := range b.content.Entries {
+		if entry.Ts.After(ts) {
+			if lastentry.Id == "" {
+				return nil
+			}
+			return &lastentry
+		}
+
+		lastentry = entry
+	}
+
+	return nil
+}
+
+// get all incremental BackupEntry between two specific entry
+// used to realize point in time recovery and recreate the oplog
+func (b *HomeLogFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry {
 	results := []BackupEntry{}
 	for _, entry :=  range b.content.Entries {
 		if entry.Ts.After(from.Ts) && entry.Ts.Before(to.Ts) && entry.Kind == from.Kind {

@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Tue 29 Dec 21:58:53 2015 gaspar_d
+** Last update Fri  1 Jan 03:09:54 2016 gaspar_d
 */
 
 package main
@@ -85,7 +85,7 @@ func (e *Env) perforIncrementalBackup(backupId string) {
     firstOplogEntries bson.MongoTimestamp
   )
 
-  e.info.Printf("Performing an incremental backup of: %s", e.options.mongohost);
+  e.info.Printf("Performing incremental backup of: %s", e.options.mongohost);
 
   lastSavedOplog    = e.homeval.lastOplog;
   firstOplogEntries = e.getOplogFirstEntries()["ts"].(bson.MongoTimestamp);

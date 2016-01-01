@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Fri  1 Jan 01:09:05 2016 gaspar_d
+** Last update Fri  1 Jan 03:09:12 2016 gaspar_d
  */
 
 package main
@@ -26,9 +26,9 @@ const (
 )
 
 
-// represent the command lines option
+// abstract structure standing for command line options
 type Options struct {
-	// heneral options
+	// general options
 	operation   int
 	directory   string
 	kind        string
@@ -62,14 +62,14 @@ func ParseOptions() Options {
 	optNoFsyncLock := set.BoolLong("nofsynclock", 0, "Avoid using fsyncLock() and fsyncUnlock()")
 	optNoCompress  := set.BoolLong("nocompress", 0, "disable compression for backup & restore")
 	optFull        := set.BoolLong("full", 0, "perform a non incremental backup")
-	optHelp        := set.BoolLong("help", 0, "")
+	optHelp        := set.BoolLong("help", 'h', "")
 
-	optMongo     := set.StringLong("host", 'h', "localhost:27017", "mongo hostname")
+	optMongo     := set.StringLong("host", 0, "localhost:27017", "mongo hostname")
 	optMongoUser := set.StringLong("username", 'u', "", "mongo username")
 	optMongoPwd  := set.StringLong("password", 'p', "", "mongo password")
 
-	optPitTime   := set.StringLong("pit", 't', "", "point in time recovery (using oplog format: unixtimetamp:opcount)")
-	optSnapshot  := set.StringLong("snapshot", 's', "", "backup to restore")
+	optPitTime   := set.StringLong("pit", 0, "", "point in time recovery (using oplog format: unixtimetamp:opcount)")
+	optSnapshot  := set.StringLong("snapshot", 0, "", "backup to restore")
 	optOutput    := set.StringLong("out", 'o', "", "output directory")
 
 	set.SetParameters("backup|restore|list")
@@ -90,17 +90,12 @@ func ParseOptions() Options {
 		lineOption.operation = OP_RESTORE
   } else if os.Args[1] == "list" {
 		lineOption.operation = OP_LIST
-  } else if os.Args[1] == "help" {
+  } else if os.Args[1] == "help"  || (*optHelp) {
 		PrintHelp()
 		os.Exit(0)
 	} else {
 		PrintHelp()
 		os.Exit(1)
-	}
-
-	if *optHelp {
-		PrintHelp()
-		os.Exit(0)
 	}
 
 	lineOption.stepdown    = !*optNoStepdown
@@ -147,14 +142,22 @@ func PrintHelp() {
 	helpMessage = append(helpMessage,  "--snapshot=string  to restore a specific backup")
 	helpMessage = append(helpMessage,  "--out=string  output directory")
 
-	fmt.Printf("Usage: %s backup|restore|list|help [--basedir string]\n", os.Args[0])
-	fmt.Printf("Usage: %s backup [--full] [--kind string] [--nocompress] [--nofsynclock] [--nostepdown]\n", os.Args[0])
-	fmt.Printf("Usage: %s restore --out string [--snapshot string] [--pit string]\n", os.Args[0])
-	fmt.Printf("Usage: %s list [--kind string]\n", os.Args[0])
+
+	fmt.Printf("\nUsage:\n\n    %s command options\n", os.Args[0])
+
+	fmt.Printf("\n")
+	fmt.Printf("Commands:\n")
+	fmt.Printf("\n")
+	fmt.Printf("    %s backup [--full] [--kind string] [--nocompress] [--nofsynclock] [--nostepdown]\n", os.Args[0])
+	fmt.Printf("    %s restore --out string [--snapshot string] [--pit string]\n", os.Args[0])
+	fmt.Printf("    %s list [--kind string]\n", os.Args[0])
+	fmt.Printf("\n")
+	fmt.Printf("Options:\n")
+	fmt.Printf("\n")
 
 	for _, help := range helpMessage {
+		fmt.Print("    ")
 		fmt.Print(help)
 		fmt.Print("\n")
 	}
-
 }

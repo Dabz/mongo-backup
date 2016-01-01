@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Tue 29 Dec 21:44:51 2015 gaspar_d
+** Last update Fri  1 Jan 02:07:38 2016 gaspar_d
 */
 
 package main
@@ -13,6 +13,7 @@ package main
 import (
   "os"
   "io"
+	"strings"
   "github.com/pierrec/lz4"
 )
 
@@ -140,4 +141,90 @@ func (e *Env) recCopyDir(source string, dest string, backedByte int64, totalSize
   }
 
   return nil, backedByte
+}
+
+
+// restore & uncompress a backup to a specific location
+func (e *Env) RestoreCopyDir(entry *BackupEntry, source string, dest string, restoredByte int64, totalRestored int64, pb *Progessbar) (error, int64) {
+  directory, _  := os.Open(source)
+  objects, err  := directory.Readdir(-1)
+
+	if err != nil {
+		return err, 0
+	}
+
+  for _, obj := range objects {
+    sourcefilepointer      := source + "/" + obj.Name()
+    destinationfilepointer := dest + "/" + obj.Name()
+		if entry.Compress {
+			destinationfilepointer = strings.TrimSuffix(destinationfilepointer, ".lz4")
+		}
+
+    if obj.IsDir() {
+			err,restoredByte = e.RestoreCopyDir(entry, sourcefilepointer, destinationfilepointer, restoredByte, totalRestored, pb)
+      if err != nil {
+        e.error.Println(err)
+				return err, 0
+			}
+		} else {
+			err, byteSource := e.RestoreCopyFile(sourcefilepointer, destinationfilepointer, entry)
+			restoredByte    += byteSource
+			pb.Show(float32(restoredByte) / float32(totalRestored))
+      if err != nil {
+        e.error.Println(err)
+				return err, 0
+			}
+		}
+	}
+
+	return nil, restoredByte
+}
+
+
+// Copy & Uncompress a specific file if required
+func (e *Env) RestoreCopyFile(source string, dest string, entry *BackupEntry) (error, int64) {
+	var (
+    sourcefile *os.File
+    destfile   *os.File
+		err        error
+		reader     io.Reader
+		writer     io.Writer
+	)
+
+  sourcefile, err = os.Open(source);
+  if err != nil {
+    return err, 0;
+  }
+  defer sourcefile.Close();
+
+	if entry.Compress {
+		reader = lz4.NewReader(sourcefile)
+	} else {
+		reader = sourcefile
+	}
+
+	destfile, err = os.Create(dest);
+	writer        = destfile
+	if err != nil {
+		return err, 0;
+	}
+	defer destfile.Close();
+
+  _, err = io.Copy(writer, reader)
+	if err != nil {
+		return err, 0
+	}
+
+	sourceinfo, err := os.Stat(source);
+	if err != nil {
+		return err, 0
+	}
+
+  return nil, sourceinfo.Size();
+}
+
+
+func (e *Env) checkIfDirExist(dir string) (error) {
+  _, err := os.Stat(dir);
+	return err;
 }
