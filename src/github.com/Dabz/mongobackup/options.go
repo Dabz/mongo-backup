@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Mon 28 Dec 23:52:51 2015 gaspar_d
+** Last update Fri  1 Jan 01:09:05 2016 gaspar_d
  */
 
 package main
@@ -13,6 +13,7 @@ package main
 import (
 	"code.google.com/p/getopt"
 	"os"
+	"fmt"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
 	DEFAULT_KIND = "backup"
 	DEFAULT_DIR  = "mongo-backup"
 )
+
 
 // represent the command lines option
 type Options struct {
@@ -47,41 +49,57 @@ type Options struct {
 
 // parse the command line and create the Options struct
 func ParseOptions() Options {
-	var lineOption Options
+	var (
+		lineOption Options
+		set        *getopt.Set
+	)
 
-	optDirectory   := getopt.StringLong("basedir", 'b', DEFAULT_DIR, "base directory to save & restore backup")
-	optKind        := getopt.StringLong("kind", 'k', DEFAULT_KIND, "metadata associated to the backup")
-	optNoStepdown  := getopt.BoolLong("nostepdown", 0, "no rs.stepDown() if this is the primary node")
-	optNoFsyncLock := getopt.BoolLong("nofsynclock", 0, "Avoid using fsyncLock() and fsyncUnlock()")
-	optNoCompress  := getopt.BoolLong("nocompress", 0, "disable compression for backup & restore")
-	optFull        := getopt.BoolLong("full", 0, "perform a non incremental backup")
-	optHelp        := getopt.BoolLong("help", 0, "")
+	set = getopt.New()
 
-	optMongo     := getopt.StringLong("host", 'h', "localhost:27017", "mongo hostname")
-	optMongoUser := getopt.StringLong("user", 'u', "", "mongo username")
-	optMongoPwd  := getopt.StringLong("pwd", 'p', "", "mongo password")
+	optDirectory   := set.StringLong("basedir", 'b', DEFAULT_DIR, "base directory to save & restore backup")
+	optKind        := set.StringLong("kind", 'k', DEFAULT_KIND, "metadata associated to the backup")
+	optNoStepdown  := set.BoolLong("nostepdown", 0, "no rs.stepDown() if this is the primary node")
+	optNoFsyncLock := set.BoolLong("nofsynclock", 0, "Avoid using fsyncLock() and fsyncUnlock()")
+	optNoCompress  := set.BoolLong("nocompress", 0, "disable compression for backup & restore")
+	optFull        := set.BoolLong("full", 0, "perform a non incremental backup")
+	optHelp        := set.BoolLong("help", 0, "")
 
-	optPitTime   := getopt.StringLong("pit", 't', "", "point in time recovery (using oplog format: unixtimetamp:opcount)")
-	optSnapshot  := getopt.StringLong("snapshot", 's', "", "backup to restore")
-	optOutput    := getopt.StringLong("out", 'o', "", "output directory")
+	optMongo     := set.StringLong("host", 'h', "localhost:27017", "mongo hostname")
+	optMongoUser := set.StringLong("username", 'u', "", "mongo username")
+	optMongoPwd  := set.StringLong("password", 'p', "", "mongo password")
 
-	getopt.SetParameters("backup|restore|list")
+	optPitTime   := set.StringLong("pit", 't', "", "point in time recovery (using oplog format: unixtimetamp:opcount)")
+	optSnapshot  := set.StringLong("snapshot", 's', "", "backup to restore")
+	optOutput    := set.StringLong("out", 'o', "", "output directory")
 
-	getopt.Parse()
+	set.SetParameters("backup|restore|list")
 
-	if getopt.Arg(0) == "backup" {
+	err := set.Getopt(os.Args[1:], nil);
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		set.PrintUsage(os.Stdout)
+		os.Exit(1)
+	}
+
+	if len(os.Args) < 2 {
+		PrintHelp()
+		os.Exit(1)
+	} else if os.Args[1] == "backup" {
 		lineOption.operation = OP_BACKUP
-	} else if getopt.Arg(0) == "restore" {
+	} else if os.Args[1] == "restore" {
 		lineOption.operation = OP_RESTORE
-  } else if getopt.Arg(0) == "list" {
+  } else if os.Args[1] == "list" {
 		lineOption.operation = OP_LIST
+  } else if os.Args[1] == "help" {
+		PrintHelp()
+		os.Exit(0)
 	} else {
-		getopt.Usage()
+		PrintHelp()
 		os.Exit(1)
 	}
 
 	if *optHelp {
-		getopt.Usage()
+		PrintHelp()
 		os.Exit(0)
 	}
 
@@ -107,8 +125,36 @@ func ParseOptions() Options {
 	return lineOption
 }
 
+
 // validate the option to see if there is
 // any incoherence (TODO)
 func validateOptions(o Options) bool {
 	return true
+}
+
+func PrintHelp() {
+	var helpMessage []string
+	helpMessage = append(helpMessage,  "--basedir=string  base directory to save & restore backup")
+	helpMessage = append(helpMessage,  "--kind=string  metadata associated to the backup")
+	helpMessage = append(helpMessage,  "--nostepdown  no rs.stepDown() if this is the primary node")
+	helpMessage = append(helpMessage,  "--nofsynclock  Avoid using fsyncLock() and fsyncUnlock()")
+	helpMessage = append(helpMessage,  "--nocompress  disable compression for backup & restore")
+	helpMessage = append(helpMessage,  "--full  perform a non incremental backup")
+	helpMessage = append(helpMessage,  "--host=string  mongo hostname")
+	helpMessage = append(helpMessage,  "--username=string  mongo username")
+	helpMessage = append(helpMessage,  "--password=string  mongo password")
+	helpMessage = append(helpMessage,  "--pit=string  point in time recovery (using oplog format: unixtimetamp:opcount)")
+	helpMessage = append(helpMessage,  "--snapshot=string  to restore a specific backup")
+	helpMessage = append(helpMessage,  "--out=string  output directory")
+
+	fmt.Printf("Usage: %s backup|restore|list|help [--basedir string]\n", os.Args[0])
+	fmt.Printf("Usage: %s backup [--full] [--kind string] [--nocompress] [--nofsynclock] [--nostepdown]\n", os.Args[0])
+	fmt.Printf("Usage: %s restore --out string [--snapshot string] [--pit string]\n", os.Args[0])
+	fmt.Printf("Usage: %s list [--kind string]\n", os.Args[0])
+
+	for _, help := range helpMessage {
+		fmt.Print(help)
+		fmt.Print("\n")
+	}
+
 }
