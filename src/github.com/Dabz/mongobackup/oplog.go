@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Fri  1 Jan 02:14:17 2016 gaspar_d
+** Last update Fri  1 Jan 17:59:24 2016 gaspar_d
 */
 
 package main
@@ -26,7 +26,9 @@ const (
 
 // dump the cursor to a directory
 // if compress option is specified, use lz4 while dumping
-func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson.MongoTimestamp) {
+// return the error if any, the number of byte restored, the first & last
+// oplog dumped
+func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson.MongoTimestamp, bson.MongoTimestamp) {
   var (
     destfile io.Writer
     opcount  float32
@@ -34,11 +36,12 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
     dest     string
     pb       Progessbar
 		lastop   bson.MongoTimestamp
+		firstop  bson.MongoTimestamp
   )
 
-  err := os.MkdirAll(dir, 0777);
+  err     := os.MkdirAll(dir, 0777);
   if err != nil {
-    return err, 0, lastop
+    return err, 0, firstop, lastop
   }
 
   dest     = dir + "/" + OPLOG_FILE
@@ -46,6 +49,7 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
   counter  = 0
   pb.title = "oplog dump"
 	lastop   = e.homeval.lastOplog
+	firstop  = e.homeval.lastOplog
 
   pb.Show(0)
 
@@ -53,7 +57,7 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
     dest         += ".lz4"
     dfile, err   := os.Create(dest)
     if err != nil {
-      return err, 0, lastop
+      return err, 0, firstop, lastop
     }
     defer dfile.Close();
     destfile = lz4.NewWriter(dfile);
@@ -61,25 +65,35 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
     dfile, err := os.Create(dest);
     destfile   = dfile;
     if err != nil {
-      return err, 0, lastop;
+      return err, 0, firstop, lastop;
     }
     defer dfile.Close();
   }
 
 
 	lastRow := bson.Raw{}
+	isFirst := true
   for {
 		raw   := &bson.Raw{}
     next  := cursor.Next(raw)
 
     if !next {
+			// Record last entry saved
 			if lastRow.Data != nil {
 			  lastRowUnmarshal := bson.M{}
 			  bson.Unmarshal(lastRow.Data, &lastRowUnmarshal)
 			  lastop = lastRowUnmarshal["ts"].(bson.MongoTimestamp)
 		  }
-      break;
     }
+
+    // Record first entry saved
+		if isFirst {
+			isFirst       = false
+		  rowUnmarshal := bson.M{}
+		  bson.Unmarshal(raw.Data, &rowUnmarshal)
+		  firstop = rowUnmarshal["ts"].(bson.MongoTimestamp)
+			continue
+		}
 
     buff := make([]byte, len(raw.Data))
     copy(buff, raw.Data)
@@ -87,12 +101,16 @@ func (e *Env) dumpOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson
     counter += 1
 		lastRow  = *raw
     pb.Show(counter / opcount)
+
+		if !next {
+      break;
+		}
   }
 
   pb.Show(1)
   pb.End()
 
-  return nil, float32(e.GetDirSize(dir)), lastop
+  return nil, float32(e.GetDirSize(dir)), firstop, lastop
 }
 
 

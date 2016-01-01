@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 23:59:53 2015 gaspar_d
-** Last update Mon 28 Dec 19:27:02 2015 gaspar_d
+** Last update Fri  1 Jan 18:02:54 2016 gaspar_d
  */
 
 package main
@@ -55,7 +55,7 @@ func (e *Env) fetchDBPath() {
 // lock mongodb instance db.fsyncLock()
 func (e *Env) mongoFsyncLock() error {
 	result := bson.M{}
-	err := e.mongo.DB("admin").Run(bson.D{{"fsync", 1}, {"lock", true}}, &result)
+	err    := e.mongo.DB("admin").Run(bson.D{{"fsync", 1}, {"lock", true}}, &result)
 	if err != nil {
 		e.error.Printf("Can not perform command fsyncLock (%s)", err)
 	}
@@ -76,7 +76,7 @@ func (e *Env) mongoFsyncUnLock() error {
 // check if a mongodb instance is a secondary
 func (e *Env) mongoIsSecondary() (bool, error) {
 	result := bson.M{}
-	err := e.mongo.DB("admin").Run(bson.D{{"isMaster", 1}}, &result)
+	err    := e.mongo.DB("admin").Run(bson.D{{"isMaster", 1}}, &result)
 	if err != nil {
 		e.error.Printf("Can not perform command isMaster (%s)", err)
 	}
@@ -87,7 +87,7 @@ func (e *Env) mongoIsSecondary() (bool, error) {
 // perform an rs.stepDown() on the connected instance
 func (e *Env) mongoStepDown() error {
 	result := bson.M{}
-	err := e.mongo.DB("admin").Run(bson.D{{"replSetStepDown", 60}, {"secondaryCatchUpPeriodSecs", 60}}, &result)
+	err    := e.mongo.DB("admin").Run(bson.D{{"replSetStepDown", 60}, {"secondaryCatchUpPeriodSecs", 60}}, &result)
 	e.mongo.Refresh()
 	isSec, err := e.mongoIsSecondary()
 	if err != nil && !isSec {
@@ -100,7 +100,7 @@ func (e *Env) mongoStepDown() error {
 // get the last oplog entry
 func (e *Env) getOplogLastEntries() bson.M {
 	result := bson.M{}
-	_ = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("-$natural").One(&result)
+	_       = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("-$natural").One(&result)
 
 	return result
 }
@@ -108,15 +108,15 @@ func (e *Env) getOplogLastEntries() bson.M {
 // get the first oplog entry
 func (e *Env) getOplogFirstEntries() bson.M {
 	result := bson.M{}
-	_ = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("$natural").One(&result)
+	_       = e.mongo.DB("local").C("oplog.rs").Find(bson.M{}).Sort("$natural").One(&result)
 
 	return result
 }
 
 // get oplog entries that are greater than ts
 func (e *Env) getOplogEntries(ts bson.MongoTimestamp) (iter *mgo.Iter) {
-	query := bson.M{"ts": bson.M{"$gt": ts}}
-	iter = e.mongo.DB("local").C("oplog.rs").Find(query).Iter()
+	query := bson.M{"ts": bson.M{"$gte": ts}}
+	iter   = e.mongo.DB("local").C("oplog.rs").Find(query).Iter()
 	return iter
 }
 

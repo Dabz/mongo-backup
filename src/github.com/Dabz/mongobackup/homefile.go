@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Fri  1 Jan 02:55:27 2016 gaspar_d
+** Last update Fri  1 Jan 17:54:20 2016 gaspar_d
  */
 
 package main
@@ -29,14 +29,16 @@ type HomeLog struct {
 
 // Home file backup entry json representation
 type BackupEntry struct {
-	Id        string              `json:"id"`
-	Ts        time.Time           `json:"ts"`
-	Source    string              `json:"source"`
-	Dest      string              `json:"dest"`
-	Kind      string              `json:"kind"`
-	Type      string              `json:"type"`
-	Compress  bool                `json:"compress"`
-	LastOplog bson.MongoTimestamp `json:"lastOplog"`
+	Id         string              `json:"id"`
+	Ts         time.Time           `json:"ts"`
+	Source     string              `json:"source"`
+	Dest       string              `json:"dest"`
+	Kind       string              `json:"kind"`
+	Type       string              `json:"type"`
+	Compress   bool                `json:"compress"`
+	FirstOplog bson.MongoTimestamp `json:"firstOplog"`
+	LastOplog  bson.MongoTimestamp `json:"lastOplog"`
+	FirstKnownOplog bson.MongoTimestamp `json:"firstKnownOplog"`
 }
 
 // Represent a home file

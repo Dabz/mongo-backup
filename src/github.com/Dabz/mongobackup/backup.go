@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Fri  1 Jan 03:09:54 2016 gaspar_d
+** Last update Fri  1 Jan 18:01:07 2016 gaspar_d
 */
 
 package main
@@ -32,6 +32,7 @@ func (e *Env) PerformBackup() {
 // perform a full backup
 // this is done by doing a filesystem copy of the targeted dbpath
 func (e *Env) performFullBackup(backupId string) {
+	newEntry := BackupEntry{}
   e.fetchDBPath();
   e.info.Printf("Performing full backup of: %s", e.dbpath);
 
@@ -51,15 +52,35 @@ func (e *Env) performFullBackup(backupId string) {
     os.Exit(1);
   }
 
-   newEntry       := BackupEntry{}
+	/* Dumping oplog for PIT recovery */
+	firstOplogEntries := e.getOplogFirstEntries()["ts"].(bson.MongoTimestamp)
+
+  if (firstOplogEntries > e.homeval.lastOplog) {
+    e.warning.Printf("Can not find a common point in the oplog")
+    e.warning.Printf("point in time restore is not available before this backup")
+		newEntry.LastOplog   = e.getOplogLastEntries()["ts"].(bson.MongoTimestamp)
+		newEntry.FirstOplog  = firstOplogEntries
+  } else {
+		cursor            := e.getOplogEntries(e.homeval.lastOplog)
+		err, _, fop, lop  := e.BackupOplogToDir(cursor, e.backupdirectory)
+
+		if (err != nil) {
+			e.error.Printf("Error while dumping oplog to %s (%s)", e.backupdirectory, err)
+			e.CleanupEnv()
+			os.Exit(1)
+		}
+
+		newEntry.LastOplog       = lop
+		newEntry.FirstOplog      = fop
+	}
+
    newEntry.Id     = backupId
    newEntry.Ts     = time.Now()
    newEntry.Source = e.dbpath
    newEntry.Dest   = e.backupdirectory
    newEntry.Kind   = e.options.kind
    newEntry.Type   = "full"
-   newEntry.Compress  = e.options.compress
-   newEntry.LastOplog = e.getOplogLastEntries()["ts"].(bson.MongoTimestamp)
+   newEntry.Compress        = e.options.compress
    e.homeval.AddNewEntry(newEntry)
 
 
@@ -97,14 +118,20 @@ func (e *Env) perforIncrementalBackup(backupId string) {
     os.Exit(1);
   }
 
-  cursor         := e.getOplogEntries(lastSavedOplog)
-  err, size, lop := e.dumpOplogToDir(cursor, e.backupdirectory)
+  cursor               := e.getOplogEntries(lastSavedOplog)
+  err, size, fop, lop  := e.BackupOplogToDir(cursor, e.backupdirectory)
 
   if (err != nil) {
     e.error.Printf("Error while dumping oplog to %s (%s)", e.backupdirectory, err)
     e.CleanupEnv()
     os.Exit(1)
   }
+
+   firstOplogEntries = e.getOplogFirstEntries()["ts"].(bson.MongoTimestamp);
+	 if firstOplogEntries > lastSavedOplog {
+		 e.warning.Printf("Possible gap in the oplog, last known entry has been reached during the operation")
+		 e.warning.Printf("if this message appears often, please consider increasing the oplog size")
+	 }
 
    newEntry       := BackupEntry{}
    newEntry.Id     = backupId
@@ -113,8 +140,9 @@ func (e *Env) perforIncrementalBackup(backupId string) {
    newEntry.Dest   = e.backupdirectory
    newEntry.Kind   = e.options.kind
    newEntry.Type   = "inc"
-   newEntry.LastOplog = lop
-   newEntry.Compress  = e.options.compress
+   newEntry.LastOplog  = lop
+   newEntry.FirstOplog = fop
+   newEntry.Compress   = e.options.compress
    e.homeval.AddNewEntry(newEntry)
 
   e.info.Printf("Success, %fMB of data has been saved in %s", size / (1024*1024), e.backupdirectory);
