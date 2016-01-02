@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 11:31:58 2015 gaspar_d
-** Last update Mon 28 Dec 22:54:44 2015 gaspar_d
+** Last update Sat  2 Jan 20:32:42 2016 gaspar_d
  */
 
 package main
@@ -18,13 +18,17 @@ import (
 
 // global variable containing options & context informations
 type Env struct {
+	// represent command line option
 	options         Options
+	// homelog file & representatino
 	homefile        *os.File
 	homeval         HomeLogFile
+	// logger
 	trace           *log.Logger
 	info            *log.Logger
 	warning         *log.Logger
 	error           *log.Logger
+	// mongo information
 	mongo           *mgo.Session
 	dbpath          string
 	backupdirectory string
@@ -69,9 +73,7 @@ func (e *Env) ensureSecondary() {
 // cleanup the environment variable in case of failover
 func (e *Env) CleanupEnv() {
 	e.info.Printf("Operation failed, cleaning up the database")
-	if e.options.fsynclock {
-		e.info.Printf("Performing fsyncUnlock")
-	}
+	e.info.Printf("Performing fsyncUnlock")
 	e.mongoFsyncUnLock()
 	e.homefile.Close()
 }

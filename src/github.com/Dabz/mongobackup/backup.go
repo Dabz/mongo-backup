@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Fri  1 Jan 18:01:07 2016 gaspar_d
+** Last update Sat  2 Jan 20:30:46 2016 gaspar_d
 */
 
 package main
@@ -43,6 +43,7 @@ func (e *Env) performFullBackup(backupId string) {
       os.Exit(1);
     }
   }
+
   /* Begining critical path */
   err, size := e.CopyDir(e.dbpath, e.backupdirectory);
   sizeGb    := float64(size) / (1024*1024*1024);

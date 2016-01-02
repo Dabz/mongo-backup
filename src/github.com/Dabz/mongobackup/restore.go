@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 23:33:35 2015 gaspar_d
-** Last update Fri  1 Jan 02:52:25 2016 gaspar_d
+** Last update Fri  1 Jan 23:52:42 2016 gaspar_d
 */
 
 package main
@@ -49,7 +49,13 @@ func (e *Env) PerformRestore() {
 
 			entry = e.homeval.GetLastEntryAfter(ts)
 			if entry == nil {
-				e.error.Printf("A plan to restore the base to the date %s can not be found", ts)
+				e.error.Printf("A plan to restore to the date %s can not be found", ts)
+				os.Exit(1)
+			}
+
+			err = e.homeval.CheckIncrementalConsistency(entry)
+			if err != nil {
+				e.error.Printf("Plan to restore the date %s is inconsistent (%s)", e.options.pit, err)
 				os.Exit(1)
 			}
 		}

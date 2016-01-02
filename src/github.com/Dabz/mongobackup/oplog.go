@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Fri  1 Jan 17:59:24 2016 gaspar_d
+** Last update Sat  2 Jan 20:32:57 2016 gaspar_d
 */
 
 package main
@@ -84,6 +84,7 @@ func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bs
 			  bson.Unmarshal(lastRow.Data, &lastRowUnmarshal)
 			  lastop = lastRowUnmarshal["ts"].(bson.MongoTimestamp)
 		  }
+			break;
     }
 
     // Record first entry saved
@@ -101,10 +102,6 @@ func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bs
     counter += 1
 		lastRow  = *raw
     pb.Show(counter / opcount)
-
-		if !next {
-      break;
-		}
   }
 
   pb.Show(1)

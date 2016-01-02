@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Fri  1 Jan 17:54:20 2016 gaspar_d
+** Last update Sat  2 Jan 20:29:57 2016 gaspar_d
  */
 
 package main
@@ -15,6 +15,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"os"
 	"time"
+	"errors"
 )
 
 const (
@@ -38,7 +39,6 @@ type BackupEntry struct {
 	Compress   bool                `json:"compress"`
 	FirstOplog bson.MongoTimestamp `json:"firstOplog"`
 	LastOplog  bson.MongoTimestamp `json:"lastOplog"`
-	FirstKnownOplog bson.MongoTimestamp `json:"firstKnownOplog"`
 }
 
 // Represent a home file
@@ -137,6 +137,23 @@ func (b *HomeLogFile) GetLastEntryAfter(ts time.Time) *BackupEntry {
 		}
 
 		lastentry = entry
+	}
+
+	return nil
+}
+
+// check that that incremental restoration of this backup will be consistent
+func (b *HomeLogFile) CheckIncrementalConsistency(entry *BackupEntry) (error) {
+	fullEntry := b.GetLastFullBackup(*entry)
+	entries   := b.GetIncEntriesBetween(fullEntry, entry)
+	lastval   := *fullEntry
+
+	for _, e := range entries {
+		if lastval.LastOplog <= e.FirstOplog {
+			lastval = e
+		} else {
+			return errors.New("gap detected between " + lastval.Id + " and " + e.Id)
+		}
 	}
 
 	return nil
