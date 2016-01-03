@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 11:31:58 2015 gaspar_d
-** Last update Sun  3 Jan 16:54:28 2016 gaspar_d
+** Last update Sun  3 Jan 18:19:11 2016 gaspar_d
  */
 
 package mongobackup
@@ -86,9 +86,11 @@ func (e *Env) ensureSecondary() {
 // cleanup the environment variable in case of failover
 func (e *Env) CleanupEnv() {
 	e.info.Printf("Operation failed, cleaning up the database")
-	e.info.Printf("Performing fsyncUnlock")
-	e.mongoFsyncUnLock()
-	e.homefile.Close()
+	if e.mongo != nil {
+	  e.info.Printf("Performing fsyncUnlock")
+	  e.mongoFsyncUnLock()
+	  e.homefile.Close()
+  }
 }
 
 // find or create the backup directory
