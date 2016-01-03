@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Sun  3 Jan 01:03:15 2016 gaspar_d
+** Last update Sun  3 Jan 01:07:47 2016 gaspar_d
  */
 
 package main
@@ -248,6 +248,11 @@ func (b *HomeLogFile) FindEntries(criteria, kind string) (error, []BackupEntry) 
 				temp = append(result, entry)
 			} else if i >= position {
 				temp = append(temp, entry)
+			}
+		}
+		if suffix == SuffixDec {
+			for i, j := 0, len(temp)-1; i < j; i, j = i+1, j-1 {
+				temp[i], temp[j] = temp[j], temp[i]
 			}
 		}
 	} else { // no criteria
