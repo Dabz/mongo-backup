@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Sun  3 Jan 16:47:52 2016 gaspar_d
+** Last update Sun  3 Jan 21:28:21 2016 gaspar_d
  */
 
 package mongobackup
@@ -57,9 +57,10 @@ func ParseOptions() Options {
 		set        *getopt.Set
 	)
 
-	set = getopt.New()
+	set     = getopt.New()
+	pwd, _ := os.Getwd()
 
-	optDirectory   := set.StringLong("basedir", 'b', DefaultDir, "")
+	optDirectory   := set.StringLong("basedir", 'b', pwd + "/" + DefaultDir, "")
 	optKind        := set.StringLong("kind", 'k', DefaultKind, "")
 	optNoStepdown  := set.BoolLong("nostepdown", 0, "")
 	optNoFsyncLock := set.BoolLong("nofsynclock", 0, "")
