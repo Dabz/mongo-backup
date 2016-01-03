@@ -5,13 +5,14 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 11:31:58 2015 gaspar_d
-** Last update Sun  3 Jan 15:18:58 2016 gaspar_d
+** Last update Sun  3 Jan 16:54:28 2016 gaspar_d
  */
 
 package mongobackup
 
 import (
 	"gopkg.in/mgo.v2"
+	"io/ioutil"
 	"log"
 	"os"
 )
@@ -36,15 +37,27 @@ type Env struct {
 
 // initialize the environment object
 func (e *Env) SetupEnvironment(o Options) {
-	traceHandle   := os.Stdout
-	infoHandle    := os.Stdout
-	warningHandle := os.Stdout
-	errorHandle   := os.Stderr
+	if o.Debug {
+		traceHandle   := os.Stdout
+		infoHandle    := os.Stdout
+		warningHandle := os.Stdout
+		errorHandle   := os.Stderr
 
-	e.trace   = log.New(traceHandle, "TRACE: ", log.Ldate|log.Ltime|log.Lshortfile)
-	e.info    = log.New(infoHandle, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	e.warning = log.New(warningHandle, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile)
-	e.error   = log.New(errorHandle, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	  e.trace   = log.New(traceHandle, "TRACE:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	  e.info    = log.New(infoHandle, "INFO:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	  e.warning = log.New(warningHandle, "WARNING:\t", log.Ldate|log.Ltime|log.Lshortfile)
+	  e.error   = log.New(errorHandle, "ERROR:\t", log.Ldate|log.Ltime|log.Lshortfile)
+  } else {
+		traceHandle   := ioutil.Discard
+		infoHandle    := os.Stdout
+		warningHandle := os.Stdout
+		errorHandle   := os.Stderr
+
+	  e.trace   = log.New(traceHandle, "TRACE:\t", log.Ldate|log.Ltime)
+	  e.info    = log.New(infoHandle, "INFO:\t", log.Ldate|log.Ltime)
+	  e.warning = log.New(warningHandle, "WARNING:\t", log.Ldate|log.Ltime)
+	  e.error   = log.New(errorHandle, "ERROR:\t", log.Ldate|log.Ltime)
+	}
 
 	e.Options = o
 	e.checkBackupDirectory()

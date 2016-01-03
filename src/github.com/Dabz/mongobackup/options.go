@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Sun  3 Jan 15:19:41 2016 gaspar_d
+** Last update Sun  3 Jan 16:47:52 2016 gaspar_d
  */
 
 package mongobackup
@@ -35,6 +35,7 @@ type Options struct {
 	Kind        string
 	Stepdown    bool
 	Position    string
+	Debug       bool
 	// backup options
 	Fsynclock   bool
 	Incremental bool
@@ -65,6 +66,7 @@ func ParseOptions() Options {
 	optNoCompress  := set.BoolLong("nocompress", 0, "")
 	optFull        := set.BoolLong("full", 0, "")
 	optHelp        := set.BoolLong("help", 'h', "")
+	optDebug       := set.BoolLong("debug", 'd', "")
 
 	optMongo     := set.StringLong("host", 0, "localhost:27017", "")
 	optMongoUser := set.StringLong("username", 'u', "", "")
@@ -109,6 +111,7 @@ func ParseOptions() Options {
 	lineOption.Incremental = !*optFull
 	lineOption.Directory   = *optDirectory
 	lineOption.Compress    = !*optNoCompress
+	lineOption.Debug       = *optDebug
 
 	lineOption.Mongohost = *optMongo
 	lineOption.Mongouser = *optMongoUser
