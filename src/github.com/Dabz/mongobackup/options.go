@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:28:29 2015 gaspar_d
-** Last update Fri  1 Jan 03:09:12 2016 gaspar_d
+** Last update Sun  3 Jan 00:38:26 2016 gaspar_d
  */
 
 package main
@@ -20,6 +20,7 @@ const (
 	OP_BACKUP  = 0
 	OP_RESTORE = 1
 	OP_LIST    = 4
+	OP_DELETE  = 8
 
 	DEFAULT_KIND = "backup"
 	DEFAULT_DIR  = "mongo-backup"
@@ -33,6 +34,7 @@ type Options struct {
 	directory   string
 	kind        string
 	stepdown    bool
+	position    string
 	// backup options
 	fsynclock   bool
 	incremental bool
@@ -56,21 +58,23 @@ func ParseOptions() Options {
 
 	set = getopt.New()
 
-	optDirectory   := set.StringLong("basedir", 'b', DEFAULT_DIR, "base directory to save & restore backup")
-	optKind        := set.StringLong("kind", 'k', DEFAULT_KIND, "metadata associated to the backup")
-	optNoStepdown  := set.BoolLong("nostepdown", 0, "no rs.stepDown() if this is the primary node")
-	optNoFsyncLock := set.BoolLong("nofsynclock", 0, "Avoid using fsyncLock() and fsyncUnlock()")
-	optNoCompress  := set.BoolLong("nocompress", 0, "disable compression for backup & restore")
-	optFull        := set.BoolLong("full", 0, "perform a non incremental backup")
+	optDirectory   := set.StringLong("basedir", 'b', DEFAULT_DIR, "")
+	optKind        := set.StringLong("kind", 'k', DEFAULT_KIND, "")
+	optNoStepdown  := set.BoolLong("nostepdown", 0, "")
+	optNoFsyncLock := set.BoolLong("nofsynclock", 0, "")
+	optNoCompress  := set.BoolLong("nocompress", 0, "")
+	optFull        := set.BoolLong("full", 0, "")
 	optHelp        := set.BoolLong("help", 'h', "")
 
-	optMongo     := set.StringLong("host", 0, "localhost:27017", "mongo hostname")
-	optMongoUser := set.StringLong("username", 'u', "", "mongo username")
-	optMongoPwd  := set.StringLong("password", 'p', "", "mongo password")
+	optMongo     := set.StringLong("host", 0, "localhost:27017", "")
+	optMongoUser := set.StringLong("username", 'u', "", "")
+	optMongoPwd  := set.StringLong("password", 'p', "", "")
 
-	optPitTime   := set.StringLong("pit", 0, "", "point in time recovery (using oplog format: unixtimetamp:opcount)")
-	optSnapshot  := set.StringLong("snapshot", 0, "", "backup to restore")
-	optOutput    := set.StringLong("out", 'o', "", "output directory")
+	optPitTime   := set.StringLong("pit", 0, "", "")
+	optSnapshot  := set.StringLong("snapshot", 0, "", "")
+	optOutput    := set.StringLong("out", 'o', "", "")
+
+	optPosition  := set.StringLong("entries", 0, "", "")
 
 	set.SetParameters("backup|restore|list")
 
@@ -90,6 +94,8 @@ func ParseOptions() Options {
 		lineOption.operation = OP_RESTORE
   } else if os.Args[1] == "list" {
 		lineOption.operation = OP_LIST
+  } else if os.Args[1] == "delete" {
+		lineOption.operation = OP_DELETE
   } else if os.Args[1] == "help"  || (*optHelp) {
 		PrintHelp()
 		os.Exit(0)
@@ -111,6 +117,7 @@ func ParseOptions() Options {
 	lineOption.pit       = *optPitTime
 	lineOption.snapshot  = *optSnapshot
 	lineOption.output    = *optOutput
+	lineOption.position  = *optPosition
 
 	if !validateOptions(lineOption) {
 		getopt.Usage()
@@ -141,6 +148,7 @@ func PrintHelp() {
 	helpMessage = append(helpMessage,  "--pit=string  point in time recovery (using oplog format: unixtimetamp:opcount)")
 	helpMessage = append(helpMessage,  "--snapshot=string  to restore a specific backup")
 	helpMessage = append(helpMessage,  "--out=string  output directory")
+	helpMessage = append(helpMessage,  "--entries=string  criteria string (format number[+-])")
 
 
 	fmt.Printf("\nUsage:\n\n    %s command options\n", os.Args[0])
@@ -148,9 +156,13 @@ func PrintHelp() {
 	fmt.Printf("\n")
 	fmt.Printf("Commands:\n")
 	fmt.Printf("\n")
-	fmt.Printf("    %s backup [--full] [--kind string] [--nocompress] [--nofsynclock] [--nostepdown]\n", os.Args[0])
-	fmt.Printf("    %s restore --out string [--snapshot string] [--pit string]\n", os.Args[0])
-	fmt.Printf("    %s list [--kind string]\n", os.Args[0])
+	fmt.Printf("    %s backup [--kind string] [--nocompress] [--nofsynclock] [--nostepdown]\n", os.Args[0])
+	fmt.Printf("    %s backup --full [--kind string] [--nocompress] [--nofsynclock] [--nostepdown]\n", os.Args[0])
+	fmt.Printf("    %s restore --out string --snapshot string\n", os.Args[0])
+	fmt.Printf("    %s restore --out string --pit string\n", os.Args[0])
+	fmt.Printf("    %s delete --kind string --entries string\n", os.Args[0])
+	fmt.Printf("    %s delete --snapshot string\n", os.Args[0])
+	fmt.Printf("    %s list [--kind string] [--entries string]\n", os.Args[0])
 	fmt.Printf("\n")
 	fmt.Printf("Options:\n")
 	fmt.Printf("\n")

@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Sat  2 Jan 20:29:57 2016 gaspar_d
+** Last update Sun  3 Jan 01:03:15 2016 gaspar_d
  */
 
 package main
@@ -16,16 +16,20 @@ import (
 	"os"
 	"time"
 	"errors"
+	"strconv"
 )
 
 const (
 	HomeFileVersion = "0.0.1"
+	SuffixInc       = '+'
+	SuffixDec       = '-'
 )
 
 // Home file json representation
 type HomeLog struct {
-	Version string        `json:"version"`
-	Entries []BackupEntry `json:"entries"`
+	Version  string        `json:"version"`
+	Entries  []BackupEntry `json:"entries"`
+	Sequence int           `json:"seq"`
 }
 
 // Home file backup entry json representation
@@ -73,18 +77,38 @@ func (b *HomeLogFile) Read(reader *os.File) error {
 
 // create a new homelogfile and write it to the disk
 func (b *HomeLogFile) Create(writer *os.File) error {
-	b.content.Version = HomeFileVersion
-	b.content.Entries = []BackupEntry{}
+	b.content.Version  = HomeFileVersion
+	b.content.Entries  = []BackupEntry{}
+	b.content.Sequence = 0
 	b.file = writer
 	err := b.Flush()
 
 	return err
 }
 
-// add a new entry and flush it to the disk
+// add a new entry and flush it to disk
 func (b *HomeLogFile) AddNewEntry(in BackupEntry) error {
-	b.content.Entries = append(b.content.Entries, in)
+	b.content.Entries   = append(b.content.Entries, in)
+	b.content.Sequence += 1
 	b.Flush()
+	return nil
+}
+
+// remove an entry and flush it to disk
+func (b *HomeLogFile) RemoveEntry(rm BackupEntry) error {
+	entries := []BackupEntry{}
+
+	for _, entry := range b.content.Entries {
+		if entry.Id == rm.Id {
+			continue
+		}
+
+		entries = append(entries, entry)
+	}
+
+	b.content.Entries = entries
+	b.Flush()
+
 	return nil
 }
 
@@ -96,6 +120,7 @@ func (b *HomeLogFile) Flush() error {
 		return err
 	}
 
+	b.file.Truncate(0)
 	b.file.Seek(0, 0)
 	_, err = b.file.Write(buff)
 
@@ -176,4 +201,70 @@ func (b *HomeLogFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry 
 	}
 
 	return results
+}
+
+// return entries according to a criteria (string0
+// TODO should we use a lexer/parser?
+func (b *HomeLogFile) FindEntries(criteria, kind string) (error, []BackupEntry) {
+	var (
+		result      []BackupEntry
+		temp        []BackupEntry
+		criterialen int
+		lastchar    uint8
+		suffix      uint8
+		position    int
+		err         error
+	)
+
+	suffix = 0
+
+	// filter on criteria
+	if criteria != "" {
+		criterialen = len(criteria)
+	  lastchar    = criteria[criterialen - 1]
+
+	  if lastchar == SuffixInc || lastchar == SuffixDec {
+			suffix   = lastchar
+			criteria = criteria[:criterialen - 1]
+	  }
+
+		position, err = strconv.Atoi(criteria)
+		if err != nil {
+			return err, result
+		}
+
+		ilist := []BackupEntry{}
+		if suffix == SuffixInc {
+			ilist = b.content.Entries
+		} else if suffix == SuffixDec {
+			ilist = b.content.Entries
+			for i, j := 0, len(ilist)-1; i < j; i, j = i+1, j-1 {
+				ilist[i], ilist[j] = ilist[j], ilist[i]
+			}
+		}
+
+		for i, entry := range ilist {
+			if suffix == 0 && i == position {
+				temp = append(result, entry)
+			} else if i >= position {
+				temp = append(temp, entry)
+			}
+		}
+	} else { // no criteria
+		temp = b.content.Entries
+	}
+
+	// filter on kind
+	if kind != "" {
+		result = []BackupEntry{}
+	  for _, entry := range temp {
+			if kind == DEFAULT_KIND || entry.Kind == kind {
+				result = append(result, entry)
+			}
+	  }
+	} else { // no kind
+		result = temp
+	}
+
+	return nil, result
 }

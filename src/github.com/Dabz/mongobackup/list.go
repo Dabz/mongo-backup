@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 22:26:20 2015 gaspar_d
-** Last update Wed 30 Dec 14:50:57 2015 gaspar_d
+** Last update Sun  3 Jan 00:09:15 2016 gaspar_d
  */
 
 package main
@@ -22,11 +22,13 @@ func (e *Env) List(kind string) {
 		os.Exit(1)
 	}
 
-	entries := e.homeval.content.Entries
+	err, entries := e.homeval.FindEntries(e.options.position, kind)
+	if err != nil {
+		e.error.Printf("Error while retrieving entries (%s)", err)
+		os.Exit(1)
+	}
 
 	for _, entry := range entries {
-		if kind == DEFAULT_KIND || entry.Kind == kind {
-			fmt.Printf("id: %s\tts: %v\tkind: %s\ttype: %s\n", entry.Id, entry.Ts, entry.Kind, entry.Type)
-		}
+		fmt.Printf("id: %s\tts: %v\tkind: %s\ttype: %s\n", entry.Id, entry.Ts, entry.Kind, entry.Type)
 	}
 }

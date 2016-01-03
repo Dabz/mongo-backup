@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Sat  2 Jan 20:30:46 2016 gaspar_d
+** Last update Sun  3 Jan 00:51:41 2016 gaspar_d
 */
 
 package main
@@ -13,12 +13,13 @@ package main
 import (
   "os"
   "time"
+	"strconv"
   "gopkg.in/mgo.v2/bson"
 )
 
 // perform a backup according to the specified options
 func (e *Env) PerformBackup() {
-  backupId         := time.Now().Format("20060102150405");
+  backupId         := strconv.Itoa(e.homeval.content.Sequence)
   e.backupdirectory = e.options.directory + "/" + backupId;
 	e.ensureSecondary();
 
