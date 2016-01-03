@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Sun  3 Jan 01:07:47 2016 gaspar_d
+** Last update Sun  3 Jan 15:10:28 2016 gaspar_d
  */
 
-package main
+package mongobackup
 
 import (
 	"encoding/json"
@@ -81,16 +81,13 @@ func (b *HomeLogFile) Create(writer *os.File) error {
 	b.content.Entries  = []BackupEntry{}
 	b.content.Sequence = 0
 	b.file = writer
-	err := b.Flush()
-
-	return err
+	return nil
 }
 
 // add a new entry and flush it to disk
 func (b *HomeLogFile) AddNewEntry(in BackupEntry) error {
 	b.content.Entries   = append(b.content.Entries, in)
 	b.content.Sequence += 1
-	b.Flush()
 	return nil
 }
 
@@ -107,7 +104,6 @@ func (b *HomeLogFile) RemoveEntry(rm BackupEntry) error {
 	}
 
 	b.content.Entries = entries
-	b.Flush()
 
 	return nil
 }
@@ -147,6 +143,20 @@ func (b *HomeLogFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
 	}
 
 	return nil
+}
+
+// return the next entry after the one provided
+func (b *HomeLogFile) GetNextBackup(etr BackupEntry) BackupEntry {
+	lastentry := BackupEntry{}
+
+	for _, entry := range b.content.Entries {
+		if lastentry.Id == etr.Id {
+			return entry
+		}
+		lastentry = entry
+	}
+
+	return BackupEntry{}
 }
 
 // get the last entry before the requested date
@@ -203,57 +213,68 @@ func (b *HomeLogFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry 
 	return results
 }
 
+// Find entries according to a criteria
+func (b* HomeLogFile) FindEntriesFromCriteria(criteria string) (error, []BackupEntry) {
+	var (
+		position int
+		suffix   uint8
+		err      error
+		result   []BackupEntry
+	)
+	suffix       = 0
+	criterialen := len(criteria)
+	lastchar    := criteria[criterialen - 1]
+
+	if lastchar == SuffixInc || lastchar == SuffixDec {
+		suffix   = lastchar
+		criteria = criteria[:criterialen - 1]
+	}
+
+	position, err = strconv.Atoi(criteria)
+	if err != nil {
+		return err, result
+	}
+
+	ilist := []BackupEntry{}
+	if suffix == SuffixInc {
+		ilist = b.content.Entries
+	} else if suffix == SuffixDec {
+		ilist = b.content.Entries
+		for i, j := 0, len(ilist)-1; i < j; i, j = i+1, j-1 {
+			ilist[i], ilist[j] = ilist[j], ilist[i]
+		}
+	}
+
+	for i, entry := range ilist {
+		if suffix == 0 && i == position {
+			result = append(result, entry)
+		} else if i >= position {
+			result = append(result, entry)
+		}
+	}
+	if suffix == SuffixDec {
+		for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+			result[i], result[j] = result[j], result[i]
+		}
+	}
+
+	return nil, result
+}
+
 // return entries according to a criteria (string0
 // TODO should we use a lexer/parser?
 func (b *HomeLogFile) FindEntries(criteria, kind string) (error, []BackupEntry) {
 	var (
 		result      []BackupEntry
 		temp        []BackupEntry
-		criterialen int
-		lastchar    uint8
-		suffix      uint8
-		position    int
 		err         error
 	)
 
-	suffix = 0
-
 	// filter on criteria
 	if criteria != "" {
-		criterialen = len(criteria)
-	  lastchar    = criteria[criterialen - 1]
-
-	  if lastchar == SuffixInc || lastchar == SuffixDec {
-			suffix   = lastchar
-			criteria = criteria[:criterialen - 1]
-	  }
-
-		position, err = strconv.Atoi(criteria)
+		err, temp = b.FindEntriesFromCriteria(criteria)
 		if err != nil {
-			return err, result
-		}
-
-		ilist := []BackupEntry{}
-		if suffix == SuffixInc {
-			ilist = b.content.Entries
-		} else if suffix == SuffixDec {
-			ilist = b.content.Entries
-			for i, j := 0, len(ilist)-1; i < j; i, j = i+1, j-1 {
-				ilist[i], ilist[j] = ilist[j], ilist[i]
-			}
-		}
-
-		for i, entry := range ilist {
-			if suffix == 0 && i == position {
-				temp = append(result, entry)
-			} else if i >= position {
-				temp = append(temp, entry)
-			}
-		}
-		if suffix == SuffixDec {
-			for i, j := 0, len(temp)-1; i < j; i, j = i+1, j-1 {
-				temp[i], temp[j] = temp[j], temp[i]
-			}
+			return err, temp
 		}
 	} else { // no criteria
 		temp = b.content.Entries
@@ -263,7 +284,7 @@ func (b *HomeLogFile) FindEntries(criteria, kind string) (error, []BackupEntry) 
 	if kind != "" {
 		result = []BackupEntry{}
 	  for _, entry := range temp {
-			if kind == DEFAULT_KIND || entry.Kind == kind {
+			if kind == DefaultKind || entry.Kind == kind {
 				result = append(result, entry)
 			}
 	  }

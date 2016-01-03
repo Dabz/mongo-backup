@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Sat  2 Jan 20:32:57 2016 gaspar_d
+** Last update Sun  3 Jan 15:16:41 2016 gaspar_d
 */
 
-package main
+package mongobackup
 
 import (
   "os"
@@ -53,7 +53,7 @@ func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bs
 
   pb.Show(0)
 
-  if e.options.compress {
+  if e.Options.Compress {
     dest         += ".lz4"
     dfile, err   := os.Create(dest)
     if err != nil {
@@ -113,7 +113,7 @@ func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bs
 
 // dump the oplog between the entries to the requested output directory
 func (e *Env) DumpOplogsToDir(from, to *BackupEntry) error {
-	destdir   := e.options.output + "/" + OPLOG_DIR
+	destdir   := e.Options.Output + "/" + OPLOG_DIR
 	oplogfile := destdir + OPLOG_FILE
 	err       := os.MkdirAll(destdir, 0700)
 	pb        := Progessbar{}

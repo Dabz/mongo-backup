@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 23:33:35 2015 gaspar_d
-** Last update Fri  1 Jan 23:52:42 2016 gaspar_d
+** Last update Sun  3 Jan 15:19:57 2016 gaspar_d
 */
 
-package main
+package mongobackup
 
 import (
 	"os"
@@ -26,15 +26,15 @@ func (e *Env) PerformRestore() {
 		entry *BackupEntry
 	)
 
-	if (e.options.snapshot != "" || e.options.pit != "") && e.options.output != "" {
-		if e.options.pit == "" {
-		  entry = e.homeval.GetBackupEntry(e.options.snapshot)
+	if (e.Options.Snapshot != "" || e.Options.Pit != "") && e.Options.Output != "" {
+		if e.Options.Pit == "" {
+		  entry = e.homeval.GetBackupEntry(e.Options.Snapshot)
 			if entry == nil {
-				e.error.Printf("Backup %s can not be found", e.options.snapshot)
+				e.error.Printf("Backup %s can not be found", e.Options.Snapshot)
 				os.Exit(1)
 			}
 	  } else {
-			pit   := e.options.pit
+			pit   := e.Options.Pit
 			index := strings.Index(pit, ":")
 			if index != -1 {
 			  pit = pit[:index]
@@ -42,7 +42,7 @@ func (e *Env) PerformRestore() {
 
 			i, err := strconv.ParseInt(pit, 10, 64)
 			if err != nil {
-				e.error.Printf("Invalid point in time value: %s (%s)", e.options.pit, err)
+				e.error.Printf("Invalid point in time value: %s (%s)", e.Options.Pit, err)
 				os.Exit(1)
 			}
 			ts := time.Unix(i, 0)
@@ -55,7 +55,7 @@ func (e *Env) PerformRestore() {
 
 			err = e.homeval.CheckIncrementalConsistency(entry)
 			if err != nil {
-				e.error.Printf("Plan to restore the date %s is inconsistent (%s)", e.options.pit, err)
+				e.error.Printf("Plan to restore the date %s is inconsistent (%s)", e.Options.Pit, err)
 				os.Exit(1)
 			}
 		}
@@ -75,32 +75,36 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 		pb        Progessbar
 		dirSize   int64
 	)
-	err = e.checkIfDirExist(e.options.output)
+	err = e.checkIfDirExist(e.Options.Output)
   e.info.Printf("Performing a restore of backup %s", entry.Id);
 	if err != nil {
-		e.error.Printf("Can not access directory %s, cowardly failling (%s)", e.options.output, err)
+		e.error.Printf("Can not access directory %s, cowardly failling (%s)", e.Options.Output, err)
 		os.Exit(1)
 	}
 
 	if entry.Type == "inc" {
 		entryFull = e.homeval.GetLastFullBackup(*entry)
+		if entryFull == nil {
+			e.error.Printf("Error, can not retrieve a valid full backup before incremental backup %s", entry.Id)
+			os.Exit(1)
+		}
 		e.info.Printf("Restoration of backup %s is needed first", entryFull.Id)
 	} else {
 		entryFull = entry
 	}
 
-  pb.title        = "restoring"
-  pb.scale        = 3
-	dirSize         = e.GetDirSize(entryFull.Dest)
+  pb.title = "restoring"
+  pb.scale = 3
+	dirSize  = e.GetDirSize(entryFull.Dest)
 
 	pb.Show(0)
-	err, restored  := e.RestoreCopyDir(entryFull, entryFull.Dest, e.options.output, 0, dirSize, &pb)
+	err, restored  := e.RestoreCopyDir(entryFull, entryFull.Dest, e.Options.Output, 0, dirSize, &pb)
 	pb.End()
 	if err != nil {
 		e.error.Printf("Restore of %s failed (%s)", entryFull.Dest, err)
 		os.Exit(1)
 	}
-	e.info.Printf("Sucessful restoration, %fGB has been restored to %s", float32(restored) / (1024*1024*1024), e.options.output)
+	e.info.Printf("Sucessful restoration, %fGB has been restored to %s", float32(restored) / (1024*1024*1024), e.Options.Output)
 
 	if entry.Type == "inc" {
 		e.info.Printf("Dumping oplog of the required snapshots")
@@ -110,10 +114,10 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 			os.Exit(1)
 		}
 		message := "Success. To replay the oplog, start mongod and execute: "
-		if e.options.pit == "" {
-			message += "`mongorestore --oplogReplay " + e.options.output + "/oplog/`"
+		if e.Options.Pit == "" {
+			message += "`mongorestore --oplogReplay " + e.Options.Output + "/oplog/`"
 		} else {
-			message += "`mongorestore --oplogReplay --oplogLimit " +  e.options.pit + " " + e.options.output + "/oplog/`"
+			message += "`mongorestore --oplogReplay --oplogLimit " +  e.Options.Pit + " " + e.Options.Output + "/oplog/`"
 		}
 
 		e.info.Printf(message)

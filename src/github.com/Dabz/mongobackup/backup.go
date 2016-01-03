@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Sun  3 Jan 00:51:41 2016 gaspar_d
+** Last update Sun  3 Jan 15:15:42 2016 gaspar_d
 */
 
-package main
+package mongobackup
 
 import (
   "os"
@@ -20,10 +20,10 @@ import (
 // perform a backup according to the specified options
 func (e *Env) PerformBackup() {
   backupId         := strconv.Itoa(e.homeval.content.Sequence)
-  e.backupdirectory = e.options.directory + "/" + backupId;
+  e.backupdirectory = e.Options.Directory + "/" + backupId;
 	e.ensureSecondary();
 
-  if (! e.options.incremental) {
+  if (! e.Options.Incremental) {
     e.performFullBackup(backupId);
   } else {
     e.perforIncrementalBackup(backupId);
@@ -37,7 +37,7 @@ func (e *Env) performFullBackup(backupId string) {
   e.fetchDBPath();
   e.info.Printf("Performing full backup of: %s", e.dbpath);
 
-  if (e.options.fsynclock) {
+  if (e.Options.Fsynclock) {
     e.info.Printf("Locking the database")
     if(e.mongoFsyncLock() != nil) {
       e.CleanupEnv();
@@ -80,16 +80,17 @@ func (e *Env) performFullBackup(backupId string) {
    newEntry.Ts     = time.Now()
    newEntry.Source = e.dbpath
    newEntry.Dest   = e.backupdirectory
-   newEntry.Kind   = e.options.kind
+   newEntry.Kind   = e.Options.Kind
    newEntry.Type   = "full"
-   newEntry.Compress        = e.options.compress
+   newEntry.Compress        = e.Options.Compress
    e.homeval.AddNewEntry(newEntry)
+	 e.homeval.Flush()
 
 
   e.info.Printf("Success, %fGB of data has been saved in %s", sizeGb, e.backupdirectory);
 
   /* End of critical path */
-  if (e.options.fsynclock) {
+  if (e.Options.Fsynclock) {
     e.info.Printf("Unlocking the database")
       if (e.mongoFsyncUnLock() != nil) {
         e.CleanupEnv();
@@ -108,7 +109,7 @@ func (e *Env) perforIncrementalBackup(backupId string) {
     firstOplogEntries bson.MongoTimestamp
   )
 
-  e.info.Printf("Performing incremental backup of: %s", e.options.mongohost);
+  e.info.Printf("Performing incremental backup of: %s", e.Options.Mongohost);
 
   lastSavedOplog    = e.homeval.lastOplog;
   firstOplogEntries = e.getOplogFirstEntries()["ts"].(bson.MongoTimestamp);
@@ -133,19 +134,21 @@ func (e *Env) perforIncrementalBackup(backupId string) {
 	 if firstOplogEntries > lastSavedOplog {
 		 e.warning.Printf("Possible gap in the oplog, last known entry has been reached during the operation")
 		 e.warning.Printf("if this message appears often, please consider increasing the oplog size")
+		 e.warning.Printf("https://docs.mongodb.org/manual/tutorial/change-oplog-size/")
 	 }
 
    newEntry       := BackupEntry{}
    newEntry.Id     = backupId
    newEntry.Ts     = time.Now()
-   newEntry.Source = e.options.mongohost
+   newEntry.Source = e.Options.Mongohost
    newEntry.Dest   = e.backupdirectory
-   newEntry.Kind   = e.options.kind
+   newEntry.Kind   = e.Options.Kind
    newEntry.Type   = "inc"
    newEntry.LastOplog  = lop
    newEntry.FirstOplog = fop
-   newEntry.Compress   = e.options.compress
+   newEntry.Compress   = e.Options.Compress
    e.homeval.AddNewEntry(newEntry)
+	 e.homeval.Flush()
 
   e.info.Printf("Success, %fMB of data has been saved in %s", size / (1024*1024), e.backupdirectory);
 }

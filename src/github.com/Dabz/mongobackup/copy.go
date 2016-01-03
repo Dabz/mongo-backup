@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Fri  1 Jan 02:07:38 2016 gaspar_d
+** Last update Sun  3 Jan 15:18:21 2016 gaspar_d
 */
 
-package main
+package mongobackup
 
 import (
   "os"
@@ -30,7 +30,7 @@ func (e *Env) CopyFile(source string, dest string) (err error, backedByte int64)
   defer sourcefile.Close()
 
   var destfile io.Writer
-  if (e.options.compress) {
+  if (e.Options.Compress) {
     dest         += ".lz4"
     dfile, err   := os.Create(dest)
     if err != nil {

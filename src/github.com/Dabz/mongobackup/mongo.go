@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 23:59:53 2015 gaspar_d
-** Last update Fri  1 Jan 18:02:54 2016 gaspar_d
+** Last update Sun  3 Jan 15:16:24 2016 gaspar_d
  */
 
-package main
+package mongobackup
 
 import (
 	"gopkg.in/mgo.v2"
@@ -19,17 +19,17 @@ import (
 // create mongoclient object
 func (e *Env) connectMongo() {
 	var err error
-	e.mongo, err = mgo.Dial(e.options.mongohost + "?connect=direct")
+	e.mongo, err = mgo.Dial(e.Options.Mongohost + "?connect=direct")
 	if err != nil {
-		e.error.Printf("Can not connect to %s (%s)", e.options.mongohost, err)
+		e.error.Printf("Can not connect to %s (%s)", e.Options.Mongohost, err)
 		e.CleanupEnv()
 		os.Exit(1)
 	}
 
-	if e.options.mongouser != "" && e.options.mongopwd != "" {
-		err := e.mongo.DB("admin").Login(e.options.mongouser, e.options.mongopwd)
+	if e.Options.Mongouser != "" && e.Options.Mongopwd != "" {
+		err := e.mongo.DB("admin").Login(e.Options.Mongouser, e.Options.Mongopwd)
 		if err != nil {
-			e.error.Printf("Can not login with %s user (%s)", e.options.mongouser, err)
+			e.error.Printf("Can not login with %s user (%s)", e.Options.Mongouser, err)
 			e.CleanupEnv()
 			os.Exit(1)
 		}

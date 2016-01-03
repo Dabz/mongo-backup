@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 11:31:58 2015 gaspar_d
-** Last update Sat  2 Jan 20:39:09 2016 gaspar_d
+** Last update Sun  3 Jan 15:18:58 2016 gaspar_d
  */
 
-package main
+package mongobackup
 
 import (
 	"gopkg.in/mgo.v2"
@@ -19,7 +19,7 @@ import (
 // global variable containing options & context informations
 type Env struct {
 	// represent command line option
-	options         Options
+	Options         Options
 	// homelog file & representatino
 	homefile        *os.File
 	homeval         HomeLogFile
@@ -46,7 +46,7 @@ func (e *Env) SetupEnvironment(o Options) {
 	e.warning = log.New(warningHandle, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile)
 	e.error   = log.New(errorHandle, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
 
-	e.options = o
+	e.Options = o
 	e.checkBackupDirectory()
 	e.checkHomeFile()
 	e.connectMongo()
@@ -56,7 +56,7 @@ func (e *Env) SetupEnvironment(o Options) {
 // ensure that the targeted instance is a secondary
 // try to perform a rs.stepDown() if it is a primary node
 func (e *Env) ensureSecondary() {
-	if e.options.stepdown {
+	if e.Options.Stepdown {
 		isSec, err := e.mongoIsSecondary()
 		if err != nil {
 			os.Exit(1)
@@ -80,24 +80,24 @@ func (e *Env) CleanupEnv() {
 
 // find or create the backup directory
 func (e *Env) checkBackupDirectory() {
-	finfo, err := os.Stat(e.options.directory)
+	finfo, err := os.Stat(e.Options.Directory)
 	if err != nil {
-		os.Mkdir(e.options.directory, 0777)
-		finfo, err = os.Stat(e.options.directory)
+		os.Mkdir(e.Options.Directory, 0777)
+		finfo, err = os.Stat(e.Options.Directory)
 	}
 
 	if err != nil {
-		e.error.Printf("can not create create %s directory (%s)", e.options.directory, err)
+		e.error.Printf("can not create create %s directory (%s)", e.Options.Directory, err)
 		os.Exit(1)
 	} else if !finfo.IsDir() {
-		e.error.Printf("%s is not a directory", e.options.directory)
+		e.error.Printf("%s is not a directory", e.Options.Directory)
 		os.Exit(1)
 	}
 }
 
 // find of create the home file
 func (e *Env) checkHomeFile() {
-	homefile := e.options.directory + "/backup.json"
+	homefile := e.Options.Directory + "/backup.json"
 	_, err := os.Stat(homefile)
 
 	if err != nil {
