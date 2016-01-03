@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 11:31:58 2015 gaspar_d
-** Last update Sun  3 Jan 18:19:11 2016 gaspar_d
+** Last update Mon  4 Jan 00:25:35 2016 gaspar_d
  */
 
 package mongobackup
@@ -62,7 +62,10 @@ func (e *Env) SetupEnvironment(o Options) {
 	e.Options = o
 	e.checkBackupDirectory()
 	e.checkHomeFile()
-	e.connectMongo()
+	err := e.connectMongo()
+	if err != nil {
+		e.error.Printf("Error while connecting to mongo (%s)", err)
+	}
 }
 
 
@@ -72,6 +75,7 @@ func (e *Env) ensureSecondary() {
 	if e.Options.Stepdown {
 		isSec, err := e.mongoIsSecondary()
 		if err != nil {
+			e.error.Printf("Error while checking if the node is primary (%s)", err)
 			os.Exit(1)
 		}
 		if !isSec {
@@ -118,6 +122,7 @@ func (e *Env) checkHomeFile() {
 	if err != nil {
 		e.homefile, err = os.OpenFile(homefile, os.O_CREATE|os.O_RDWR, 0700)
 		err = e.homeval.Create(e.homefile)
+		e.homeval.Flush()
 		if err != nil {
 			e.error.Printf("can not create  %s (%s)", homefile, err)
 			os.Exit(1)

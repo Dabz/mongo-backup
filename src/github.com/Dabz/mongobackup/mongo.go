@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 23:59:53 2015 gaspar_d
-** Last update Sun  3 Jan 18:18:25 2016 gaspar_d
+** Last update Mon  4 Jan 00:24:53 2016 gaspar_d
  */
 
 package mongobackup
@@ -13,29 +13,29 @@ package mongobackup
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"errors"
+	"fmt"
 	"os"
 )
 
 // create mongoclient object
-func (e *Env) connectMongo() {
+func (e *Env) connectMongo() error {
 	var err error
 	e.mongo, err = mgo.Dial(e.Options.Mongohost + "?connect=direct")
 	if err != nil {
-		e.error.Printf("Can not connect to %s (%s)", e.Options.Mongohost, err)
-		e.CleanupEnv()
-		os.Exit(1)
+		return errors.New(fmt.Sprintf("Can not connect to %s (%s)", e.Options.Mongohost, err))
 	}
 
 	if e.Options.Mongouser != "" && e.Options.Mongopwd != "" {
 		err := e.mongo.DB("admin").Login(e.Options.Mongouser, e.Options.Mongopwd)
 		if err != nil {
-			e.error.Printf("Can not login with %s user (%s)", e.Options.Mongouser, err)
-			e.CleanupEnv()
-			os.Exit(1)
+			return errors.New(fmt.Sprintf("Can not login with %s user (%s)", e.Options.Mongouser, err))
 		}
 	}
 
 	e.mongo.SetMode(mgo.SecondaryPreferred, true)
+
+	return nil
 }
 
 // fetch the dbPath of the mongo instance using the
@@ -78,7 +78,12 @@ func (e *Env) mongoIsSecondary() (bool, error) {
 	result := bson.M{}
 	err    := e.mongo.DB("admin").Run(bson.D{{"isMaster", 1}}, &result)
 	if err != nil {
-		e.error.Printf("Can not perform command isMaster (%s)", err)
+		err = errors.New(fmt.Sprintf("Can not perform command isMaster (%s)", err))
+		return false, err
+	}
+
+	if result["secondary"] == nil {
+		return false, errors.New("Cowardly refusing to perform backup on standalone node. Please check MongoDB architecture guide")
 	}
 
 	return result["secondary"].(bool), err
