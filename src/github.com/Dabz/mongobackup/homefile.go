@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Fri 25 Dec 17:09:55 2015 gaspar_d
-** Last update Sun  3 Jan 15:10:28 2016 gaspar_d
+** Last update Sun  3 Jan 21:23:24 2016 gaspar_d
  */
 
 package mongobackup
@@ -214,13 +214,14 @@ func (b *HomeLogFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry 
 }
 
 // Find entries according to a criteria
-func (b* HomeLogFile) FindEntriesFromCriteria(criteria string) (error, []BackupEntry) {
+func (b* HomeLogFile) FindEntriesFromCriteria(criteria string, input []BackupEntry) (error, []BackupEntry) {
 	var (
 		position int
 		suffix   uint8
 		err      error
 		result   []BackupEntry
 	)
+
 	suffix       = 0
 	criterialen := len(criteria)
 	lastchar    := criteria[criterialen - 1]
@@ -237,9 +238,9 @@ func (b* HomeLogFile) FindEntriesFromCriteria(criteria string) (error, []BackupE
 
 	ilist := []BackupEntry{}
 	if suffix == SuffixInc {
-		ilist = b.content.Entries
+		ilist = input
 	} else if suffix == SuffixDec {
-		ilist = b.content.Entries
+		ilist = input
 		for i, j := 0, len(ilist)-1; i < j; i, j = i+1, j-1 {
 			ilist[i], ilist[j] = ilist[j], ilist[i]
 		}
@@ -261,35 +262,43 @@ func (b* HomeLogFile) FindEntriesFromCriteria(criteria string) (error, []BackupE
 	return nil, result
 }
 
+// return all entries from this kind
+func (b* HomeLogFile) FindEntriesFromKind(kind string, input []BackupEntry) (error, []BackupEntry) {
+	result := []BackupEntry{}
+
+	for _, entry := range input {
+		if entry.Kind == kind {
+			result = append(result, entry)
+		}
+	}
+
+	return nil, result
+}
+
 // return entries according to a criteria (string0
 // TODO should we use a lexer/parser?
 func (b *HomeLogFile) FindEntries(criteria, kind string) (error, []BackupEntry) {
 	var (
 		result      []BackupEntry
-		temp        []BackupEntry
 		err         error
 	)
 
-	// filter on criteria
-	if criteria != "" {
-		err, temp = b.FindEntriesFromCriteria(criteria)
-		if err != nil {
-			return err, temp
-		}
-	} else { // no criteria
-		temp = b.content.Entries
-	}
-
 	// filter on kind
 	if kind != "" {
-		result = []BackupEntry{}
-	  for _, entry := range temp {
-			if kind == DefaultKind || entry.Kind == kind {
-				result = append(result, entry)
-			}
-	  }
+		err, result = b.FindEntriesFromKind(kind, b.content.Entries)
+		if err != nil {
+			return err, result
+		}
 	} else { // no kind
-		result = temp
+		result = b.content.Entries
+	}
+
+	// filter on criteria
+	if criteria != "" {
+		err, result = b.FindEntriesFromCriteria(criteria, result)
+		if err != nil {
+			return err, result
+		}
 	}
 
 	return nil, result

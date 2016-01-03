@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat  2 Jan 20:36:01 2016 gaspar_d
-** Last update Sun  3 Jan 15:18:13 2016 gaspar_d
+** Last update Sun  3 Jan 21:19:09 2016 gaspar_d
 */
 
 package mongobackup
@@ -61,7 +61,6 @@ func (e *Env) DeleteEntry(id string) error {
 func (e *Env) DeleteEntries(criteria, kind string) error {
 	var (
 		entries     []BackupEntry
-		fullEntries []BackupEntry
 		ids         []string
 		err         error
 	)
@@ -72,47 +71,51 @@ func (e *Env) DeleteEntries(criteria, kind string) error {
 		os.Exit(1)
 	}
 
+	// fetch first & alst full backup
+	firstFullBackup := BackupEntry{}
+	lastFullBackup  := BackupEntry{}
 	for _, entry := range entries {
-		// if full backup, save it for later deletion
+		if firstFullBackup.Id == "" && entry.Type == "full" {
+			firstFullBackup = entry
+		}
 		if entry.Type == "full" {
-			fullEntries = append(fullEntries, entry)
-			continue
+			lastFullBackup = entry
 		}
-		// if incremental backup, let's delete it right away
-		err = e.homeval.RemoveEntry(entry)
-		e.homeval.Flush()
-		if err != nil {
-			e.error.Printf("Error while removing entry from the log file (%s), attempting to continue...", err)
-		}
-		err = os.RemoveAll(entry.Dest)
-		if err != nil {
-			e.error.Printf("Error while deleting backup files (%s), attempting to continue...", err)
-		}
-
-		ids = append(ids, entry.Id)
 	}
 
-	// let's delete full backup
-	for _, entry := range fullEntries {
-		nextEntry := e.homeval.GetNextBackup(entry)
-		if nextEntry.Id != "" && nextEntry.Type != "full" {
-			e.warning.Printf("Cowardly not deleting backup %s as there is incremental backup depending on it", entry.Id)
-			continue
-		}
-
-		err = e.homeval.RemoveEntry(entry)
-		e.homeval.Flush()
-		if err != nil {
-			e.error.Printf("Error while removing entry from the log file (%s), attempting to continue...", err)
-		}
-		err = os.RemoveAll(entry.Dest)
-		if err != nil {
-			e.error.Printf("Error while deleting backup files (%s), attempting to continue...", err)
-		}
-
-		ids = append(ids, entry.Id)
+	// check that there is a range of backup available for deletion
+	if firstFullBackup.Id == "" || firstFullBackup.Id == lastFullBackup.Id {
+		e.warning.Printf("Cowardly not deleting backups as there is incremental backup depending on it")
+		return nil
 	}
 
+	// let's delete them
+	for _, entry := range entries {
+		// we should not delete the last entry...
+		if entry.Type == "full" && entry.Id != lastFullBackup.Id {
+			err = e.homeval.RemoveEntry(entry)
+			e.homeval.Flush()
+			if err != nil {
+				e.error.Printf("Error while removing entry from the log file (%s), attempting to continue...", err)
+			}
+			err = os.RemoveAll(entry.Dest)
+			if err != nil {
+				e.error.Printf("Error while deleting backup files (%s), attempting to continue...", err)
+			}
+			ids = append(ids, entry.Id)
+		} else if entry.Type == "inc" { // if incremental backup, let's delete it right away
+		  err = e.homeval.RemoveEntry(entry)
+		  e.homeval.Flush()
+		  if err != nil {
+				e.error.Printf("Error while removing entry from the log file (%s), attempting to continue...", err)
+			}
+			err = os.RemoveAll(entry.Dest)
+			if err != nil {
+				e.error.Printf("Error while deleting backup files (%s), attempting to continue...", err)
+		  }
+			ids = append(ids, entry.Id)
+	  }
+	}
 
 	e.info.Printf("Success, backup %s has been deleted", strings.Join(ids, ","))
 
