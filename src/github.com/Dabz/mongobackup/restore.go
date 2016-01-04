@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 23:33:35 2015 gaspar_d
-** Last update Sun  3 Jan 15:19:57 2016 gaspar_d
+** Last update Mon  4 Jan 01:47:42 2016 gaspar_d
 */
 
 package mongobackup
@@ -31,6 +31,7 @@ func (e *Env) PerformRestore() {
 		  entry = e.homeval.GetBackupEntry(e.Options.Snapshot)
 			if entry == nil {
 				e.error.Printf("Backup %s can not be found", e.Options.Snapshot)
+				e.CleanupEnv()
 				os.Exit(1)
 			}
 	  } else {
@@ -43,6 +44,7 @@ func (e *Env) PerformRestore() {
 			i, err := strconv.ParseInt(pit, 10, 64)
 			if err != nil {
 				e.error.Printf("Invalid point in time value: %s (%s)", e.Options.Pit, err)
+				e.CleanupEnv()
 				os.Exit(1)
 			}
 			ts := time.Unix(i, 0)
@@ -50,12 +52,14 @@ func (e *Env) PerformRestore() {
 			entry = e.homeval.GetLastEntryAfter(ts)
 			if entry == nil {
 				e.error.Printf("A plan to restore to the date %s can not be found", ts)
+				e.CleanupEnv()
 				os.Exit(1)
 			}
 
 			err = e.homeval.CheckIncrementalConsistency(entry)
 			if err != nil {
 				e.error.Printf("Plan to restore the date %s is inconsistent (%s)", e.Options.Pit, err)
+				e.CleanupEnv()
 				os.Exit(1)
 			}
 		}
@@ -63,6 +67,7 @@ func (e *Env) PerformRestore() {
 		e. performFullRestore(entry)
 	} else {
 		e.error.Printf("Invalid configuration")
+		e.CleanupEnv()
 		os.Exit(1)
 	}
 }
@@ -79,6 +84,7 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
   e.info.Printf("Performing a restore of backup %s", entry.Id);
 	if err != nil {
 		e.error.Printf("Can not access directory %s, cowardly failling (%s)", e.Options.Output, err)
+		e.CleanupEnv()
 		os.Exit(1)
 	}
 
@@ -86,6 +92,7 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 		entryFull = e.homeval.GetLastFullBackup(*entry)
 		if entryFull == nil {
 			e.error.Printf("Error, can not retrieve a valid full backup before incremental backup %s", entry.Id)
+			e.CleanupEnv()
 			os.Exit(1)
 		}
 		e.info.Printf("Restoration of backup %s is needed first", entryFull.Id)
@@ -102,6 +109,7 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 	pb.End()
 	if err != nil {
 		e.error.Printf("Restore of %s failed (%s)", entryFull.Dest, err)
+		e.CleanupEnv()
 		os.Exit(1)
 	}
 	e.info.Printf("Sucessful restoration, %fGB has been restored to %s", float32(restored) / (1024*1024*1024), e.Options.Output)
@@ -111,6 +119,7 @@ func (e *Env) performFullRestore(entry *BackupEntry) {
 		err := e.DumpOplogsToDir(entryFull, entry)
 		if err != nil {
 			e.error.Printf("Restore of %s failed while dumping oplog (%s)", entryFull.Dest,  err)
+			e.CleanupEnv()
 			os.Exit(1)
 		}
 		message := "Success. To replay the oplog, start mongod and execute: "

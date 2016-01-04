@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Sun  3 Jan 15:15:42 2016 gaspar_d
+** Last update Mon  4 Jan 01:47:10 2016 gaspar_d
 */
 
 package mongobackup
@@ -118,6 +118,7 @@ func (e *Env) perforIncrementalBackup(backupId string) {
     e.error.Printf("Can not find a common point in the oplog");
     e.error.Printf("You must perform a full backup");
 
+		e.CleanupEnv()
     os.Exit(1);
   }
 

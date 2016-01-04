@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat  2 Jan 20:36:01 2016 gaspar_d
-** Last update Sun  3 Jan 21:19:09 2016 gaspar_d
+** Last update Mon  4 Jan 01:48:11 2016 gaspar_d
 */
 
 package mongobackup
@@ -24,12 +24,14 @@ func (e *Env) PerformDeletion() error {
 		e.homeval.Flush()
 		if err != nil {
 			e.error.Printf("Error while deleting backup %s (%s)", e.Options.Snapshot, err)
+			e.CleanupEnv()
 			os.Exit(1)
 		}
 	} else if e.Options.Position != ""  || e.Options.Kind != "" {
 		err := e.DeleteEntries(e.Options.Position, e.Options.Kind)
 		if err != nil {
 			e.error.Printf("Error while deleting backups (%s)", err)
+			e.CleanupEnv()
 			os.Exit(1)
 		}
 	}
@@ -68,6 +70,7 @@ func (e *Env) DeleteEntries(criteria, kind string) error {
 	err, entries = e.homeval.FindEntries(criteria, kind)
 	if err != nil {
 		e.error.Printf("Error while retrieving entries (%s)", err)
+		e.CleanupEnv()
 		os.Exit(1)
 	}
 
