@@ -47,9 +47,9 @@ List available backups
 Scheduling has to be performed using an external tool, e.g. cron
 Bellow a sample configuration for a daily backup where a full backup is performed once a week every Sunday and where we stored a daily backup for the last 7 days and a monthly backups for the last 13 months.
 ```cron
-0 0 * * Sun     mongobackup --basedir /backup --full --kind daily   && mongobackup delete --basedir /backup --entries '7-'
-0 0 * * Mon-Sat mongobackup --basedir /backup --kind daily
-0 0 1 * *       mongobackup --basedir /backup --full --kind monthly && mongobackup delete --basedir /backup --entries '13-'
+0 0 * * Sun     mongobackup backup --basedir /backup --full --kind daily   && mongobackup delete --basedir /backup --kind daily --entries '7-'
+0 0 * * Mon-Sat mongobackup backup --basedir /backup --kind daily
+0 0 1 * *       mongobackup backup --basedir /backup --full --kind monthly && mongobackup delete --basedir /backup --kind monthly --entries '13-'
 ```
 
 ## Releases
