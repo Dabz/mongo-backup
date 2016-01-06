@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Sun  3 Jan 15:18:21 2016 gaspar_d
+** Last update Wed  6 Jan 20:05:17 2016 gaspar_d
 */
 
 package mongobackup
@@ -15,6 +15,7 @@ import (
   "io"
 	"strings"
   "github.com/pierrec/lz4"
+	"github.com/Dabz/utils"
 )
 
 
@@ -84,9 +85,9 @@ func (e *BackupEnv) GetDirSize(source string) (int64) {
 // Copy a directory into another and compress all files if required
 func (e *BackupEnv) CopyDir(source string, dest string) (err error, backedByte int64) {
   totalSize      := e.GetDirSize(source)
-  pb             := ProgressBar{}
-  pb.title        = "backup"
-  pb.scale        = 3
+  pb             := utils.ProgressBar{}
+  pb.Title        = "backup"
+  pb.Scale        = 3
   err, _          = e.recCopyDir(source, dest, 0, totalSize, &pb)
 
   pb.End();
@@ -100,7 +101,7 @@ func (e *BackupEnv) CopyDir(source string, dest string) (err error, backedByte i
 
 
 // Recursive copy directory function
-func (e *BackupEnv) recCopyDir(source string, dest string, backedByte int64, totalSize int64, pb *ProgressBar) (err error, oBackedByte int64) {
+func (e *BackupEnv) recCopyDir(source string, dest string, backedByte int64, totalSize int64, pb *utils.ProgressBar) (err error, oBackedByte int64) {
   sourceinfo, err := os.Stat(source);
 
   if err != nil {
@@ -145,7 +146,7 @@ func (e *BackupEnv) recCopyDir(source string, dest string, backedByte int64, tot
 
 
 // restore & uncompress a backup to a specific location
-func (e *BackupEnv) RestoreCopyDir(entry *BackupEntry, source string, dest string, restoredByte int64, totalRestored int64, pb *ProgressBar) (error, int64) {
+func (e *BackupEnv) RestoreCopyDir(entry *BackupEntry, source string, dest string, restoredByte int64, totalRestored int64, pb *utils.ProgressBar) (error, int64) {
   directory, _  := os.Open(source)
   objects, err  := directory.Readdir(-1)
 

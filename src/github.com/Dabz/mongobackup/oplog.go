@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Sat 26 Dec 22:49:07 2015 gaspar_d
-** Last update Sun  3 Jan 15:16:41 2016 gaspar_d
+** Last update Wed  6 Jan 20:03:36 2016 gaspar_d
 */
 
 package mongobackup
@@ -15,7 +15,8 @@ import (
   "io"
   "gopkg.in/mgo.v2"
   "gopkg.in/mgo.v2/bson"
-   "github.com/pierrec/lz4"
+  "github.com/pierrec/lz4"
+	"github.com/Dabz/utils"
 )
 
 const (
@@ -34,7 +35,7 @@ func (e *BackupEnv) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float
     opcount  float32
     counter  float32
     dest     string
-    pb       ProgressBar
+    pb       utils.ProgressBar
 		lastop   bson.MongoTimestamp
 		firstop  bson.MongoTimestamp
   )
@@ -47,7 +48,7 @@ func (e *BackupEnv) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float
   dest     = dir + "/" + OPLOG_FILE
   opcount  = float32(e.getOplogCount())
   counter  = 0
-  pb.title = "oplog dump"
+  pb.Title = "oplog dump"
 	lastop   = e.homeval.lastOplog
 	firstop  = e.homeval.lastOplog
 
@@ -116,8 +117,8 @@ func (e *BackupEnv) DumpOplogsToDir(from, to *BackupEntry) error {
 	destdir   := e.Options.Output + "/" + OPLOG_DIR
 	oplogfile := destdir + OPLOG_FILE
 	err       := os.MkdirAll(destdir, 0700)
-	pb        := ProgressBar{}
-  pb.scale   = 3
+	pb        := utils.ProgressBar{}
+  pb.Scale   = 3
 	if err != nil {
 		return err
 	}
@@ -148,12 +149,12 @@ func (e *BackupEnv) DumpOplogsToDir(from, to *BackupEntry) error {
 			}
 		}
 
-		pb.title   = "dumping " + entry.Id
+		pb.Title   = "dumping " + entry.Id
 		pb.Show(float32(index) / float32(total))
 
 		io.Copy(destfile, reader)
 	}
-	pb.title = "dumping"
+	pb.Title = "dumping"
 	pb.Show(1)
 	pb.End()
 	return nil

@@ -5,10 +5,10 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:55:40 2015 gaspar_d
-** Last update Tue 29 Dec 22:21:52 2015 gaspar_d
+** Last update Wed  6 Jan 20:04:57 2016 gaspar_d
 */
 
-package mongobackup
+package utils
 
 import (
   "fmt"
@@ -18,9 +18,9 @@ import (
 )
 
 type ProgressBar struct {
-  title string
-  scale uint16
-  ended bool
+  Title string // displayed label for the progressbar
+  Scale uint16 // width of the bar (3 means that 1/3% of the terminal size)
+  Ended bool   // true if the 100% has been reached
 }
 
 type WinSize struct {
@@ -41,11 +41,11 @@ func (p *ProgressBar) GetWinSize() (*WinSize, error) {
     uintptr(unsafe.Pointer(ws)),
   )
 
- if p.scale == 0 {
-   p.scale = 3
+ if p.Scale == 0 {
+   p.Scale = 3
  }
 
-  ws.Ws_col = ws.Ws_col / p.scale
+  ws.Ws_col = ws.Ws_col / p.Scale
 
   if err != 0 {
     return nil, err
@@ -92,7 +92,7 @@ func (p *ProgressBar) Show(percent float32) error {
     l   int
   )
 
-  if p.ended {
+  if p.Ended {
     return nil;
   }
 
@@ -123,19 +123,19 @@ func (p *ProgressBar) Show(percent float32) error {
 
   p.Clear()
 
-  if int(percent) == 1 && !p.ended {
-    fmt.Print(fmt.Sprintf("%s |%s| %s\n", p.title, ps, num))
-    p.ended = true
+  if int(percent) == 1 && !p.Ended {
+    fmt.Print(fmt.Sprintf("%s |%s| %s\n", p.Title, ps, num))
+    p.Ended = true
   } else {
-    fmt.Print(fmt.Sprintf("%s |%s| %s", p.title, ps, num))
+    fmt.Print(fmt.Sprintf("%s |%s| %s", p.Title, ps, num))
   }
 
   return nil
 }
 
 func (p *ProgressBar) End() {
-  if (!p.ended) {
+  if (!p.Ended) {
     fmt.Print("\n")
-    p.ended = true
+    p.Ended = true
   }
 }

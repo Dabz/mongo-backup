@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Mon 28 Dec 23:33:35 2015 gaspar_d
-** Last update Wed  6 Jan 07:43:17 2016 gaspar_d
+** Last update Wed  6 Jan 20:05:22 2016 gaspar_d
 */
 
 package mongobackup
@@ -15,6 +15,7 @@ import (
 	"strings"
 	"strconv"
 	"time"
+	"github.com/Dabz/utils"
 )
 
 // perform the restore & dump the oplog if required
@@ -77,7 +78,7 @@ func (e *BackupEnv) performFullRestore(entry *BackupEntry) {
 	var (
 		entryFull *BackupEntry
 		err       error
-		pb        ProgressBar
+		pb        utils.ProgressBar
 		dirSize   int64
 	)
 	err = e.checkIfDirExist(e.Options.Output)
@@ -100,8 +101,8 @@ func (e *BackupEnv) performFullRestore(entry *BackupEntry) {
 		entryFull = entry
 	}
 
-  pb.title = "restoring"
-  pb.scale = 3
+  pb.Title = "restoring"
+  pb.Scale = 3
 	dirSize  = e.GetDirSize(entryFull.Dest)
 
 	pb.Show(0)
