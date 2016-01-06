@@ -28,13 +28,13 @@ const (
 // if compress option is specified, use lz4 while dumping
 // return the error if any, the number of byte restored, the first & last
 // oplog dumped
-func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson.MongoTimestamp, bson.MongoTimestamp) {
+func (e *BackupEnv) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bson.MongoTimestamp, bson.MongoTimestamp) {
   var (
     destfile io.Writer
     opcount  float32
     counter  float32
     dest     string
-    pb       Progessbar
+    pb       ProgressBar
 		lastop   bson.MongoTimestamp
 		firstop  bson.MongoTimestamp
   )
@@ -112,11 +112,11 @@ func (e *Env) BackupOplogToDir(cursor *mgo.Iter, dir string) (error, float32, bs
 
 
 // dump the oplog between the entries to the requested output directory
-func (e *Env) DumpOplogsToDir(from, to *BackupEntry) error {
+func (e *BackupEnv) DumpOplogsToDir(from, to *BackupEntry) error {
 	destdir   := e.Options.Output + "/" + OPLOG_DIR
 	oplogfile := destdir + OPLOG_FILE
 	err       := os.MkdirAll(destdir, 0700)
-	pb        := Progessbar{}
+	pb        := ProgressBar{}
   pb.scale   = 3
 	if err != nil {
 		return err

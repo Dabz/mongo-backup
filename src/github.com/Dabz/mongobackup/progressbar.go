@@ -17,7 +17,7 @@ import (
   "unsafe"
 )
 
-type Progessbar struct {
+type ProgressBar struct {
   title string
   scale uint16
   ended bool
@@ -31,7 +31,7 @@ type WinSize struct {
 }
 
 // see: http://www.delorie.com/djgpp/doc/libc/libc_495.html
-func (p *Progessbar) GetWinSize() (*WinSize, error) {
+func (p *ProgressBar) GetWinSize() (*WinSize, error) {
   ws := &WinSize{}
 
   _, _, err := syscall.Syscall(
@@ -55,11 +55,11 @@ func (p *Progessbar) GetWinSize() (*WinSize, error) {
 }
 
 // clear whole line and move cursor to leftmost of line
-func (p *Progessbar) Clear() {
+func (p *ProgressBar) Clear() {
   fmt.Print("\033[2K\033[0G")
 }
 
-func (b *Progessbar) Repeat(str string, count int) string {
+func (b *ProgressBar) Repeat(str string, count int) string {
   var out string
 
   for i := 0; i < count; i++ {
@@ -77,7 +77,7 @@ var (
   mutex = &sync.Mutex{}
 )
 
-func (p *Progessbar) Show(percent float32) error {
+func (p *ProgressBar) Show(percent float32) error {
   var (
     ws   *WinSize
     err  error
@@ -133,7 +133,7 @@ func (p *Progessbar) Show(percent float32) error {
   return nil
 }
 
-func (p *Progessbar) End() {
+func (p *ProgressBar) End() {
   if (!p.ended) {
     fmt.Print("\n")
     p.ended = true

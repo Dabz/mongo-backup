@@ -20,7 +20,7 @@ import (
 // perform an incremental or full backup
 // check the documentation of the performFullBackup, perforIncrementalBackup
 // for more information
-func (e *Env) PerformBackup() {
+func (e *BackupEnv) PerformBackup() {
   backupId         := strconv.Itoa(e.homeval.content.Sequence)
   e.backupdirectory = e.Options.Directory + "/" + backupId;
 	e.ensureSecondary();
@@ -36,7 +36,7 @@ func (e *Env) PerformBackup() {
 // if compress option is passed, will compress using lz4
 // by default will lock the db with fsyncLock
 // will perform a rs.stepDown() if the node is primary
-func (e *Env) performFullBackup(backupId string) {
+func (e *BackupEnv) performFullBackup(backupId string) {
 	newEntry := BackupEntry{}
   e.fetchDBPath();
   e.info.Printf("Performing full backup of: %s", e.dbpath);
@@ -44,7 +44,7 @@ func (e *Env) performFullBackup(backupId string) {
   if (e.Options.Fsynclock) {
     e.info.Printf("Locking the database")
     if(e.mongoFsyncLock() != nil) {
-      e.CleanupEnv();
+      e.CleanupBackupEnv();
       os.Exit(1);
     }
   }
@@ -54,7 +54,7 @@ func (e *Env) performFullBackup(backupId string) {
   sizeGb    := float64(size) / (1024*1024*1024);
   if (err != nil) {
     e.error.Print("An error occurred while backing up ...");
-    e.CleanupEnv();
+    e.CleanupBackupEnv();
     os.Exit(1);
   }
 
@@ -72,7 +72,7 @@ func (e *Env) performFullBackup(backupId string) {
 
 		if (err != nil) {
 			e.error.Printf("Error while dumping oplog to %s (%s)", e.backupdirectory, err)
-			e.CleanupEnv()
+			e.CleanupBackupEnv()
 			os.Exit(1)
 		}
 
@@ -97,7 +97,7 @@ func (e *Env) performFullBackup(backupId string) {
   if (e.Options.Fsynclock) {
     e.info.Printf("Unlocking the database")
       if (e.mongoFsyncUnLock() != nil) {
-        e.CleanupEnv();
+        e.CleanupBackupEnv();
         os.Exit(1);
       }
   }
@@ -107,7 +107,7 @@ func (e *Env) performFullBackup(backupId string) {
 // oplog greater than the last known oplog will be dump
 // if a common point in the oplog can not be found, a
 // full backup has to be performed
-func (e *Env) perforIncrementalBackup(backupId string) {
+func (e *BackupEnv) perforIncrementalBackup(backupId string) {
   var (
     lastSavedOplog    bson.MongoTimestamp
     firstOplogEntries bson.MongoTimestamp
@@ -122,7 +122,7 @@ func (e *Env) perforIncrementalBackup(backupId string) {
     e.error.Printf("Can not find a common point in the oplog");
     e.error.Printf("You must perform a full backup");
 
-		e.CleanupEnv()
+		e.CleanupBackupEnv()
     os.Exit(1);
   }
 
@@ -131,7 +131,7 @@ func (e *Env) perforIncrementalBackup(backupId string) {
 
   if (err != nil) {
     e.error.Printf("Error while dumping oplog to %s (%s)", e.backupdirectory, err)
-    e.CleanupEnv()
+    e.CleanupBackupEnv()
     os.Exit(1)
   }
 

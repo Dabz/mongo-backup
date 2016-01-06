@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:25:07 2015 gaspar_d
-** Last update Mon  4 Jan 01:50:20 2016 gaspar_d
+** Last update Wed  6 Jan 09:37:32 2016 gaspar_d
 */
 
 package main
@@ -17,8 +17,9 @@ import (
 
 func main() {
   option := mongobackup.ParseOptions()
-  env    := mongobackup.Env{}
-	err    := env.SetupEnvironment(option)
+  env    := mongobackup.BackupEnv{}
+	err    := env.SetupBackupEnvironment(option)
+
 	if err != nil {
 		fmt.Printf("Can not setup program environment (%s)", err)
 	}

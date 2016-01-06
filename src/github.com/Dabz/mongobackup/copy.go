@@ -21,7 +21,7 @@ import (
 
 // Copy a file to another destination
 // if the compress flag is present, compress the file while copying using lz4
-func (e *Env) CopyFile(source string, dest string) (err error, backedByte int64) {
+func (e *BackupEnv) CopyFile(source string, dest string) (err error, backedByte int64) {
   sourcefile, err := os.Open(source)
   if err != nil {
     return err, 0
@@ -61,7 +61,7 @@ func (e *Env) CopyFile(source string, dest string) (err error, backedByte int64)
 }
 
 // Return the total size of the directory in byte
-func (e *Env) GetDirSize(source string) (int64) {
+func (e *BackupEnv) GetDirSize(source string) (int64) {
   directory, _   := os.Open(source);
   var sum int64   = 0;
   defer directory.Close();
@@ -82,9 +82,9 @@ func (e *Env) GetDirSize(source string) (int64) {
 
 
 // Copy a directory into another and compress all files if required
-func (e *Env) CopyDir(source string, dest string) (err error, backedByte int64) {
+func (e *BackupEnv) CopyDir(source string, dest string) (err error, backedByte int64) {
   totalSize      := e.GetDirSize(source)
-  pb             := Progessbar{}
+  pb             := ProgressBar{}
   pb.title        = "backup"
   pb.scale        = 3
   err, _          = e.recCopyDir(source, dest, 0, totalSize, &pb)
@@ -100,7 +100,7 @@ func (e *Env) CopyDir(source string, dest string) (err error, backedByte int64) 
 
 
 // Recursive copy directory function
-func (e *Env) recCopyDir(source string, dest string, backedByte int64, totalSize int64, pb *Progessbar) (err error, oBackedByte int64) {
+func (e *BackupEnv) recCopyDir(source string, dest string, backedByte int64, totalSize int64, pb *ProgressBar) (err error, oBackedByte int64) {
   sourceinfo, err := os.Stat(source);
 
   if err != nil {
@@ -145,7 +145,7 @@ func (e *Env) recCopyDir(source string, dest string, backedByte int64, totalSize
 
 
 // restore & uncompress a backup to a specific location
-func (e *Env) RestoreCopyDir(entry *BackupEntry, source string, dest string, restoredByte int64, totalRestored int64, pb *Progessbar) (error, int64) {
+func (e *BackupEnv) RestoreCopyDir(entry *BackupEntry, source string, dest string, restoredByte int64, totalRestored int64, pb *ProgressBar) (error, int64) {
   directory, _  := os.Open(source)
   objects, err  := directory.Readdir(-1)
 
@@ -182,7 +182,7 @@ func (e *Env) RestoreCopyDir(entry *BackupEntry, source string, dest string, res
 
 
 // Copy & Uncompress a specific file if required
-func (e *Env) RestoreCopyFile(source string, dest string, entry *BackupEntry) (error, int64) {
+func (e *BackupEnv) RestoreCopyFile(source string, dest string, entry *BackupEntry) (error, int64) {
 	var (
     sourcefile *os.File
     destfile   *os.File
@@ -224,7 +224,7 @@ func (e *Env) RestoreCopyFile(source string, dest string, entry *BackupEntry) (e
 }
 
 
-func (e *Env) checkIfDirExist(dir string) (error) {
+func (e *BackupEnv) checkIfDirExist(dir string) (error) {
   _, err := os.Stat(dir);
 	return err;
 }

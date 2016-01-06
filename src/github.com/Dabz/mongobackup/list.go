@@ -16,17 +16,17 @@ import (
 )
 
 // List all backups, if kinf is specified, list only backup with this kind
-func (e *Env) List(kind string) {
+func (e *BackupEnv) List(kind string) {
 	if e.homeval.content.Version == "" {
 		e.error.Printf("Can not find a valid home file")
-		e.CleanupEnv()
+		e.CleanupBackupEnv()
 		os.Exit(1)
 	}
 
 	err, entries := e.homeval.FindEntries(e.Options.Position, kind)
 	if err != nil {
 		e.error.Printf("Error while retrieving entries (%s)", err)
-		e.CleanupEnv()
+		e.CleanupBackupEnv()
 		os.Exit(1)
 	}
 

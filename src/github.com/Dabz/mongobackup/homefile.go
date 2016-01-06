@@ -46,14 +46,14 @@ type BackupEntry struct {
 }
 
 // Represent a home file
-type HomeLogFile struct {
+type BackupHistoryFile struct {
 	content   HomeLog
 	file      *os.File
 	lastOplog bson.MongoTimestamp
 }
 
 // Read & Populate the homefile structure from a file
-func (b *HomeLogFile) Read(reader *os.File) error {
+func (b *BackupHistoryFile) Read(reader *os.File) error {
 	result := HomeLog{}
 	b.file = reader
 	dec := json.NewDecoder(reader)
@@ -76,7 +76,7 @@ func (b *HomeLogFile) Read(reader *os.File) error {
 }
 
 // create a new homelogfile and write it to the disk
-func (b *HomeLogFile) Create(writer *os.File) error {
+func (b *BackupHistoryFile) Create(writer *os.File) error {
 	b.content.Version  = HomeFileVersion
 	b.content.Entries  = []BackupEntry{}
 	b.content.Sequence = 0
@@ -85,14 +85,14 @@ func (b *HomeLogFile) Create(writer *os.File) error {
 }
 
 // add a new entry and flush it to disk
-func (b *HomeLogFile) AddNewEntry(in BackupEntry) error {
+func (b *BackupHistoryFile) AddNewEntry(in BackupEntry) error {
 	b.content.Entries   = append(b.content.Entries, in)
 	b.content.Sequence += 1
 	return nil
 }
 
 // remove an entry and flush it to disk
-func (b *HomeLogFile) RemoveEntry(rm BackupEntry) error {
+func (b *BackupHistoryFile) RemoveEntry(rm BackupEntry) error {
 	entries := []BackupEntry{}
 
 	for _, entry := range b.content.Entries {
@@ -109,7 +109,7 @@ func (b *HomeLogFile) RemoveEntry(rm BackupEntry) error {
 }
 
 // flush the homelogfile to disk
-func (b *HomeLogFile) Flush() error {
+func (b *BackupHistoryFile) Flush() error {
 	buff, err := json.MarshalIndent(b.content, "", "  ")
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (b *HomeLogFile) Flush() error {
 }
 
 // return a backup associated to this speicifc id
-func (b *HomeLogFile) GetBackupEntry(id string) *BackupEntry {
+func (b *BackupHistoryFile) GetBackupEntry(id string) *BackupEntry {
 	for _, entry :=  range b.content.Entries {
 		if entry.Id == id {
 			return &entry
@@ -135,7 +135,7 @@ func (b *HomeLogFile) GetBackupEntry(id string) *BackupEntry {
 }
 
 // return the last full backup realized before a specific entry
-func (b *HomeLogFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
+func (b *BackupHistoryFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
 	for _, entry :=  range b.content.Entries {
 		if entry.Ts.Before(etr.Ts) && entry.Type == "full" && entry.Kind == etr.Kind {
 			return &entry
@@ -146,7 +146,7 @@ func (b *HomeLogFile) GetLastFullBackup(etr BackupEntry) *BackupEntry {
 }
 
 // return the next entry after the one provided
-func (b *HomeLogFile) GetNextBackup(etr BackupEntry) BackupEntry {
+func (b *BackupHistoryFile) GetNextBackup(etr BackupEntry) BackupEntry {
 	lastentry := BackupEntry{}
 
 	for _, entry := range b.content.Entries {
@@ -161,7 +161,7 @@ func (b *HomeLogFile) GetNextBackup(etr BackupEntry) BackupEntry {
 
 // get the last entry before the requested date
 // used to determine which snapshots to recover for pit
-func (b *HomeLogFile) GetLastEntryAfter(ts time.Time) *BackupEntry {
+func (b *BackupHistoryFile) GetLastEntryAfter(ts time.Time) *BackupEntry {
 	lastentry := BackupEntry{}
 	for _, entry := range b.content.Entries {
 		if entry.Ts.After(ts) {
@@ -178,7 +178,7 @@ func (b *HomeLogFile) GetLastEntryAfter(ts time.Time) *BackupEntry {
 }
 
 // check that that incremental restoration of this backup will be consistent
-func (b *HomeLogFile) CheckIncrementalConsistency(entry *BackupEntry) (error) {
+func (b *BackupHistoryFile) CheckIncrementalConsistency(entry *BackupEntry) (error) {
 	fullEntry := b.GetLastFullBackup(*entry)
 	entries   := b.GetIncEntriesBetween(fullEntry, entry)
 	lastval   := *fullEntry
@@ -196,7 +196,7 @@ func (b *HomeLogFile) CheckIncrementalConsistency(entry *BackupEntry) (error) {
 
 // get all incremental BackupEntry between two specific entry
 // used to realize point in time recovery and recreate the oplog
-func (b *HomeLogFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry {
+func (b *BackupHistoryFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry {
 	results := []BackupEntry{}
 	for _, entry :=  range b.content.Entries {
 		if entry.Ts.After(from.Ts) && entry.Ts.Before(to.Ts) && entry.Kind == from.Kind {
@@ -214,7 +214,7 @@ func (b *HomeLogFile) GetIncEntriesBetween(from, to *BackupEntry) []BackupEntry 
 }
 
 // Find entries according to a criteria
-func (b* HomeLogFile) FindEntriesFromCriteria(criteria string, input []BackupEntry) (error, []BackupEntry) {
+func (b* BackupHistoryFile) FindEntriesFromCriteria(criteria string, input []BackupEntry) (error, []BackupEntry) {
 	var (
 		position int
 		suffix   uint8
@@ -263,7 +263,7 @@ func (b* HomeLogFile) FindEntriesFromCriteria(criteria string, input []BackupEnt
 }
 
 // return all entries from this kind
-func (b* HomeLogFile) FindEntriesFromKind(kind string, input []BackupEntry) (error, []BackupEntry) {
+func (b* BackupHistoryFile) FindEntriesFromKind(kind string, input []BackupEntry) (error, []BackupEntry) {
 	result := []BackupEntry{}
 
 	for _, entry := range input {
@@ -277,7 +277,7 @@ func (b* HomeLogFile) FindEntriesFromKind(kind string, input []BackupEntry) (err
 
 // return entries according to a criteria (string0
 // TODO should we use a lexer/parser?
-func (b *HomeLogFile) FindEntries(criteria, kind string) (error, []BackupEntry) {
+func (b *BackupHistoryFile) FindEntries(criteria, kind string) (error, []BackupEntry) {
 	var (
 		result      []BackupEntry
 		err         error

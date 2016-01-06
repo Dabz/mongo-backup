@@ -24,12 +24,12 @@ const (
 )
 
 // global variable containing options & context informations
-type Env struct {
+type BackupEnv struct {
 	// represent command line option
 	Options         Options
 	// homelog file & representatino
 	homefile        *os.File
-	homeval         HomeLogFile
+	homeval         BackupHistoryFile
 	// logger
 	trace           *log.Logger
 	info            *log.Logger
@@ -44,7 +44,7 @@ type Env struct {
 }
 
 // initialize the environment object
-func (e *Env) SetupEnvironment(o Options) error {
+func (e *BackupEnv) SetupBackupEnvironment(o Options) error {
 	if o.Debug {
 		traceHandle   := os.Stdout
 		infoHandle    := os.Stdout
@@ -80,7 +80,7 @@ func (e *Env) SetupEnvironment(o Options) error {
 			}
 			try += 1
 			if try > 5 {
-				e.CleanupEnv()
+				e.CleanupBackupEnv()
 				return err
 			}
 		}
@@ -101,18 +101,18 @@ func (e *Env) SetupEnvironment(o Options) error {
 
 // ensure that the targeted instance is a secondary
 // try to perform a rs.stepDown() if it is a primary node
-func (e *Env) ensureSecondary() {
+func (e *BackupEnv) ensureSecondary() {
 	if e.Options.Stepdown {
 		isSec, err := e.mongoIsSecondary()
 		if err != nil {
 			e.error.Printf("Error while checking if the node is primary (%s)", err)
-			e.CleanupEnv()
+			e.CleanupBackupEnv()
 			os.Exit(1)
 		}
 		if !isSec {
 			e.info.Printf("Currently connected to a primary node, performing a rs.stepDown()")
 			if e.mongoStepDown() != nil {
-				e.CleanupEnv()
+				e.CleanupBackupEnv()
 				os.Exit(1)
 			}
 		}
@@ -120,7 +120,7 @@ func (e *Env) ensureSecondary() {
 }
 
 // cleanup the environment variable in case of failover
-func (e *Env) CleanupEnv() {
+func (e *BackupEnv) CleanupBackupEnv() {
 	if e.mongo != nil {
 	  e.info.Printf("Performing fsyncUnlock")
 	  e.mongoFsyncUnLock()
@@ -130,7 +130,7 @@ func (e *Env) CleanupEnv() {
 }
 
 // find or create the backup directory
-func (e *Env) checkBackupDirectory() {
+func (e *BackupEnv) checkBackupDirectory() {
 	finfo, err := os.Stat(e.Options.Directory)
 	if err != nil {
 		os.Mkdir(e.Options.Directory, 0777)
@@ -139,17 +139,17 @@ func (e *Env) checkBackupDirectory() {
 
 	if err != nil {
 		e.error.Printf("can not create create %s directory (%s)", e.Options.Directory, err)
-		e.CleanupEnv()
+		e.CleanupBackupEnv()
 		os.Exit(1)
 	} else if !finfo.IsDir() {
 		e.error.Printf("%s is not a directory", e.Options.Directory)
-		e.CleanupEnv()
+		e.CleanupBackupEnv()
 		os.Exit(1)
 	}
 }
 
 // find of create the home file
-func (e *Env) checkHomeFile() {
+func (e *BackupEnv) checkHomeFile() {
 	homefile := e.Options.Directory + "/backup.json"
 	_, err := os.Stat(homefile)
 
@@ -159,7 +159,7 @@ func (e *Env) checkHomeFile() {
 		e.homeval.Flush()
 		if err != nil {
 			e.error.Printf("can not create  %s (%s)", homefile, err)
-			e.CleanupEnv()
+			e.CleanupBackupEnv()
 			os.Exit(1)
 		}
 	} else {
@@ -167,7 +167,7 @@ func (e *Env) checkHomeFile() {
 
 		if err != nil {
 			e.error.Printf("can not open  %s (%s)", homefile, err)
-			e.CleanupEnv()
+			e.CleanupBackupEnv()
 			os.Exit(1)
 		}
 
@@ -175,7 +175,7 @@ func (e *Env) checkHomeFile() {
 
 		if err != nil {
 			e.error.Printf("can not parse %s (%s)", homefile, err)
-			e.CleanupEnv()
+			e.CleanupBackupEnv()
 			os.Exit(1)
 		}
 	}
