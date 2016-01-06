@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 17:39:06 2015 gaspar_d
-** Last update Mon  4 Jan 01:47:10 2016 gaspar_d
+** Last update Wed  6 Jan 07:43:02 2016 gaspar_d
 */
 
 package mongobackup
@@ -17,7 +17,9 @@ import (
   "gopkg.in/mgo.v2/bson"
 )
 
-// perform a backup according to the specified options
+// perform an incremental or full backup
+// check the documentation of the performFullBackup, perforIncrementalBackup
+// for more information
 func (e *Env) PerformBackup() {
   backupId         := strconv.Itoa(e.homeval.content.Sequence)
   e.backupdirectory = e.Options.Directory + "/" + backupId;
@@ -31,7 +33,9 @@ func (e *Env) PerformBackup() {
 }
 
 // perform a full backup
-// this is done by doing a filesystem copy of the targeted dbpath
+// if compress option is passed, will compress using lz4
+// by default will lock the db with fsyncLock
+// will perform a rs.stepDown() if the node is primary
 func (e *Env) performFullBackup(backupId string) {
 	newEntry := BackupEntry{}
   e.fetchDBPath();
