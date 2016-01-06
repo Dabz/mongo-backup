@@ -5,19 +5,23 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Wed 23 Dec 10:25:07 2015 gaspar_d
-** Last update Sun  3 Jan 15:20:11 2016 gaspar_d
+** Last update Mon  4 Jan 01:50:20 2016 gaspar_d
 */
 
 package main
 
 import (
 	"github.com/Dabz/mongobackup"
+	"fmt"
 )
 
 func main() {
   option := mongobackup.ParseOptions()
   env    := mongobackup.Env{}
-  env.SetupEnvironment(option)
+	err    := env.SetupEnvironment(option)
+	if err != nil {
+		fmt.Printf("Can not setup program environment (%s)", err)
+	}
 
 	if env.Options.Operation == mongobackup.OpBackup {
     env.PerformBackup()
