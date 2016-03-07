@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:43:24 2015 gaspar_d
-** Last update Wed  6 Jan 20:05:17 2016 gaspar_d
+** Last update Mon  7 Mar 16:52:44 2016 gaspar_d
 */
 
 package mongobackup
@@ -13,9 +13,9 @@ package mongobackup
 import (
   "os"
   "io"
-	"strings"
+  "strings"
   "github.com/pierrec/lz4"
-	"github.com/Dabz/utils"
+  "github.com/Dabz/utils"
 )
 
 
@@ -49,14 +49,14 @@ func (e *BackupEnv) CopyFile(source string, dest string) (err error, backedByte 
   }
 
   _, err = io.Copy(destfile, sourcefile)
-	if err != nil {
-		return err, 0
-	}
+  if err != nil {
+    return err, 0
+  }
 
-	sourceinfo, err := os.Stat(source);
-	if err != nil {
-		return err, 0
-	}
+  sourceinfo, err := os.Stat(source);
+  if err != nil {
+    return err, 0
+  }
 
   return nil, sourceinfo.Size();
 }
@@ -128,13 +128,13 @@ func (e *BackupEnv) recCopyDir(source string, dest string, backedByte int64, tot
       err, backedByte  = e.recCopyDir(sourcefilepointer, destinationfilepointer, backedByte, totalSize, pb)
       if err != nil {
         e.error.Println(err)
-				return err, 0
+        return err, 0
       }
     } else {
       err, size := e.CopyFile(sourcefilepointer, destinationfilepointer);
       if err != nil {
         e.error.Println(err);
-				return err, 0
+        return err, 0
       }
       backedByte = backedByte + size;
       pb.Show(float32(backedByte) / float32(totalSize))
@@ -150,47 +150,47 @@ func (e *BackupEnv) RestoreCopyDir(entry *BackupEntry, source string, dest strin
   directory, _  := os.Open(source)
   objects, err  := directory.Readdir(-1)
 
-	if err != nil {
-		return err, 0
-	}
+  if err != nil {
+    return err, 0
+  }
 
   for _, obj := range objects {
     sourcefilepointer      := source + "/" + obj.Name()
     destinationfilepointer := dest + "/" + obj.Name()
-		if entry.Compress {
-			destinationfilepointer = strings.TrimSuffix(destinationfilepointer, ".lz4")
-		}
+    if entry.Compress {
+      destinationfilepointer = strings.TrimSuffix(destinationfilepointer, ".lz4")
+    }
 
     if obj.IsDir() {
-			err,restoredByte = e.RestoreCopyDir(entry, sourcefilepointer, destinationfilepointer, restoredByte, totalRestored, pb)
+      err,restoredByte = e.RestoreCopyDir(entry, sourcefilepointer, destinationfilepointer, restoredByte, totalRestored, pb)
       if err != nil {
         e.error.Println(err)
-				return err, 0
-			}
-		} else {
-			err, byteSource := e.RestoreCopyFile(sourcefilepointer, destinationfilepointer, entry)
-			restoredByte    += byteSource
-			pb.Show(float32(restoredByte) / float32(totalRestored))
+        return err, 0
+      }
+    } else {
+      err, byteSource := e.RestoreCopyFile(sourcefilepointer, destinationfilepointer, entry)
+      restoredByte    += byteSource
+      pb.Show(float32(restoredByte) / float32(totalRestored))
       if err != nil {
         e.error.Println(err)
-				return err, 0
-			}
-		}
-	}
+        return err, 0
+      }
+    }
+  }
 
-	return nil, restoredByte
+  return nil, restoredByte
 }
 
 
 // Copy & Uncompress a specific file if required
 func (e *BackupEnv) RestoreCopyFile(source string, dest string, entry *BackupEntry) (error, int64) {
-	var (
+  var (
     sourcefile *os.File
     destfile   *os.File
-		err        error
-		reader     io.Reader
-		writer     io.Writer
-	)
+    err        error
+    reader     io.Reader
+    writer     io.Writer
+  )
 
   sourcefile, err = os.Open(source);
   if err != nil {
@@ -198,28 +198,28 @@ func (e *BackupEnv) RestoreCopyFile(source string, dest string, entry *BackupEnt
   }
   defer sourcefile.Close();
 
-	if entry.Compress {
-		reader = lz4.NewReader(sourcefile)
-	} else {
-		reader = sourcefile
-	}
+  if entry.Compress {
+    reader = lz4.NewReader(sourcefile)
+  } else {
+    reader = sourcefile
+  }
 
-	destfile, err = os.Create(dest);
-	writer        = destfile
-	if err != nil {
-		return err, 0;
-	}
-	defer destfile.Close();
+  destfile, err = os.Create(dest);
+  writer        = destfile
+  if err != nil {
+    return err, 0;
+  }
+  defer destfile.Close();
 
   _, err = io.Copy(writer, reader)
-	if err != nil {
-		return err, 0
-	}
+  if err != nil {
+    return err, 0
+  }
 
-	sourceinfo, err := os.Stat(source);
-	if err != nil {
-		return err, 0
-	}
+  sourceinfo, err := os.Stat(source);
+  if err != nil {
+    return err, 0
+  }
 
   return nil, sourceinfo.Size();
 }
@@ -227,5 +227,5 @@ func (e *BackupEnv) RestoreCopyFile(source string, dest string, entry *BackupEnt
 
 func (e *BackupEnv) checkIfDirExist(dir string) (error) {
   _, err := os.Stat(dir);
-	return err;
+  return err;
 }

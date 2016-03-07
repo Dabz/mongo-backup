@@ -5,7 +5,7 @@
 ** Login   gaspar_d <d.gasparina@gmail.com>
 **
 ** Started on  Thu 24 Dec 23:55:40 2015 gaspar_d
-** Last update Wed  6 Jan 20:04:57 2016 gaspar_d
+** Last update Mon  7 Mar 16:54:04 2016 gaspar_d
 */
 
 package utils
@@ -41,9 +41,9 @@ func (p *ProgressBar) GetWinSize() (*WinSize, error) {
     uintptr(unsafe.Pointer(ws)),
   )
 
- if p.Scale == 0 {
-   p.Scale = 3
- }
+  if p.Scale == 0 {
+    p.Scale = 3
+  }
 
   ws.Ws_col = ws.Ws_col / p.Scale
 
