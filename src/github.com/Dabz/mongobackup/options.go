@@ -11,7 +11,7 @@
 package mongobackup
 
 import (
-  "code.google.com/p/getopt"
+  "github.com/pborman/getopt"
   "os"
   "fmt"
 )
